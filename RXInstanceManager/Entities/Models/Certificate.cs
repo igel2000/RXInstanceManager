@@ -12,15 +12,15 @@ namespace RXInstanceManager
         [Field("body")]
         public string BodyBase64 { get; set; }
 
-        public string Body
+        public byte[] Body
         {
             get
             {
-                return AppHelper.Base64DecodeToUTF8(BodyBase64);
+                return AppHelper.Base64Decode(BodyBase64);
             }
             set
             {
-                BodyBase64 = AppHelper.Base64EncodeFromUTF8(value);
+                BodyBase64 = AppHelper.Base64Encode(value);
             }
         }
 

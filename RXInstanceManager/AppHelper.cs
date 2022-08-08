@@ -13,6 +13,12 @@ namespace RXInstanceManager
             return System.Convert.ToBase64String(plainTextBytes);
         }
 
+        public static string Base64EncodeFromASCII(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.ASCII.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
         public static string Base64Encode(byte[] plainText)
         {
             return System.Convert.ToBase64String(plainText);
@@ -26,6 +32,11 @@ namespace RXInstanceManager
         public static string Base64DecodeToUTF8(string base64EncodedData)
         {
             return System.Text.Encoding.UTF8.GetString(Base64Decode(base64EncodedData));
+        }
+
+        public static string Base64DecodeToASCII(string base64EncodedData)
+        {
+            return System.Text.Encoding.ASCII.GetString(Base64Decode(base64EncodedData));
         }
 
         public static bool ValidateInputCode(string code)

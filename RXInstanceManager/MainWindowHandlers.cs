@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.ServiceProcess;
 using System.Diagnostics;
 using YamlHandlers;
 
@@ -30,7 +29,18 @@ namespace RXInstanceManager
 
         private void LoadInstancesItems()
         {
-            GridInstances.ItemsSource = Instances.Get().OrderBy(x => x.Id).ThenBy(x => x.Status);
+            var instances = Instances.Get();
+            foreach (var instance in instances)
+            {
+                var status = AppHandlers.GetServiceStatus(instance);
+                if (instance.Status != status)
+                {
+                    instance.Status = status;
+                    instance.Save();
+                }
+            }
+
+            GridInstances.ItemsSource = instances.OrderBy(x => x.Id).ThenBy(x => x.Status);
         }
 
         private void LoadInstancesItems(Instance instance)
@@ -65,7 +75,7 @@ namespace RXInstanceManager
 
         private void ActionButtonVisibleChanging(string status = null)
         {
-            ButtonCopy.Visibility = Visibility.Collapsed;
+            //ButtonCopy.Visibility = Visibility.Collapsed;
             ButtonInstall.Visibility = Visibility.Collapsed;
             ButtonDelete.Visibility = Visibility.Collapsed;
             ButtonDDSStart.Visibility = Visibility.Collapsed;
@@ -159,8 +169,7 @@ namespace RXInstanceManager
             LaunchProcess(doPath, "do all up");
             LaunchProcess(doPath, "do dds config_up");
 
-            Dialogs.ShowInformationDialog(_processLog);
-            _processLog = string.Empty;
+            ShowProcessLog();
         }
 
         private static void RestartInstance()
@@ -169,7 +178,19 @@ namespace RXInstanceManager
             LaunchProcess(doPath, "do dds config_up");
             LaunchProcess(doPath, "do all up");
 
-            Dialogs.ShowInformationDialog(_processLog);
+            ShowProcessLog();
+        }
+
+        private static void ShowProcessLog()
+        {
+            var log = Path.Combine(Constants.LogPath, "log_" + DateTime.Now.ToString("ddMMyyHHmm") + ".log");
+            File.WriteAllText(log, _processLog);
+
+            var process = new Process();
+            process.StartInfo.FileName = "notepad.exe";
+            process.StartInfo.Arguments = log;
+            process.Start();
+
             _processLog = string.Empty;
         }
 
@@ -179,16 +200,22 @@ namespace RXInstanceManager
 
         private static Certificate GetInstanceCertificate(Config config, string storagePath)
         {
-            if (string.IsNullOrEmpty(storagePath) || !Directory.Exists(storagePath))
-                return null;
-
-            var instances = Instances.Get();
-            if (instances.Any(x => x.StoragePath == storagePath && x.Certificate != null))
-                return instances.First(x => x.StoragePath == storagePath).Certificate;
-
             var certificate = Certificates.Get().FirstOrDefault();
-            if (certificate == null || string.IsNullOrEmpty(certificate.Body))
-                certificate = CreateCertificate(config, storagePath);
+
+            if (!string.IsNullOrEmpty(storagePath) && Directory.Exists(storagePath))
+            {
+                var instances = Instances.Get();
+                if (instances.Any(x => x.StoragePath == storagePath && x.Certificate != null))
+                    return instances.First(x => x.StoragePath == storagePath).Certificate;
+
+                if (certificate == null || certificate.Body == null)
+                    certificate = CreateCertificate(config, storagePath);
+            }
+            else
+            {
+                if (certificate != null && certificate.Body != null)
+                    certificate = CopyCertificate(certificate);
+            }
 
             return certificate;
         }
@@ -207,6 +234,16 @@ namespace RXInstanceManager
             return certificate;
         }
 
+        private static Certificate CopyCertificate(Certificate certificate)
+        {
+            var certificateNew = new Certificate();
+            certificateNew.Body = certificate.Body;
+            certificateNew.Path = certificate.Path;
+            certificateNew.Save();
+
+            return certificateNew;
+        }
+
         private static void WriteCertificate(Certificate certificate)
         {
             if (string.IsNullOrEmpty(_instance.Config.Body))
@@ -221,40 +258,21 @@ namespace RXInstanceManager
                 if (!Directory.Exists(dataProtectionPath))
                     Directory.CreateDirectory(dataProtectionPath);
 
-                if (!string.IsNullOrEmpty(certificate.Body))
-                    File.WriteAllText(certificatePath, certificate.Body);
+                if (certificate.Body != null)
+                    File.WriteAllBytes(certificatePath, certificate.Body);
             }
         }
 
-        private static string GetCertificateBody(string storagePath, string certificatePath)
+        private static byte[] GetCertificateBody(string storagePath, string certificatePath)
         {
             if (!string.IsNullOrEmpty(storagePath) && !string.IsNullOrEmpty(certificatePath))
             {
                 certificatePath = certificatePath.Replace("{{ home_path }}", storagePath);
                 if (File.Exists(certificatePath))
-                    return File.ReadAllText(certificatePath);
+                    return File.ReadAllBytes(certificatePath);
             }
 
-            return string.Empty;
-        }
-
-        #endregion
-
-        #region Работа с ServiceRunner.
-
-        private static string GetServiceStatus()
-        {
-            var serviceStatus = Constants.InstanceStatus.NeedInstall;
-
-            using (var service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == _instance.ServiceName))
-            {
-                if (service != null)
-                    serviceStatus = service.Status == ServiceControllerStatus.Running ?
-                        Constants.InstanceStatus.Working :
-                        Constants.InstanceStatus.Stopped;
-            }
-
-            return serviceStatus;
+            return null;
         }
 
         #endregion
@@ -314,7 +332,22 @@ namespace RXInstanceManager
         private static void RebuildConfig()
         {
             var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-            YamlWriter.RebuildVariablesLinks(configYamlPath, _instance.Config.Body);
+            YamlWriter.RebuildVariablesLinks(_instance.Code, configYamlPath, _instance.Config.Body);
+            _instance.Config.Save();
+        }
+
+        private static void UpdateConfigVariables()
+        {
+            var yamlNode = YamlWriter.GetVariablesNode(_instance.Config.Body);
+            yamlNode.Path = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+            yamlNode.Variables.Instance_name = _instance.Code;
+            yamlNode.Variables.Instance_path = _instance.InstancePath;
+            yamlNode.Variables.Purpose = _instance.Name;
+            yamlNode.Variables.Database = _instance.DBName;
+            yamlNode.Variables.Http_port = _instance.Port.ToString();
+            yamlNode.Variables.Home_path = _instance.StoragePath;
+            yamlNode.Variables.Home_path_src = _instance.SourcesPath;
+            yamlNode.Save();
             _instance.Config.Save();
         }
 

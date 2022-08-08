@@ -54,7 +54,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                var addWhere = new AddWhere<Config>("version", QueryConstants.Expression.LessOrEqual, version);
+                var addWhere = new AddWhere<Config>("Version", QueryConstants.Expression.LessOrEqual, version);
                 return connection.Query<Config>(QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
             }
         }
@@ -63,7 +63,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                var addWhere = new AddWhere<Config>("version", QueryConstants.Expression.GreaterOrEqual, version);
+                var addWhere = new AddWhere<Config>("Version", QueryConstants.Expression.GreaterOrEqual, version);
                 return connection.Query<Config>(QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
             }
         }

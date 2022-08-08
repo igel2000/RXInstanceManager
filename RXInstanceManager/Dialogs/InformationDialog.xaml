@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RXInstanceManager"
         mc:Ignorable="d"
-        Title="Инструкция" ResizeMode="NoResize" Background="#222b34" SizeToContent="WidthAndHeight">
+        Title="Инструкция" ResizeMode="NoResize" Background="#222b34" SizeToContent="WidthAndHeight" Activated="Window_Activated">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

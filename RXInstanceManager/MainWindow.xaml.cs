@@ -24,6 +24,9 @@ namespace RXInstanceManager
         {
             InitializeComponent();
 
+            if (!Directory.Exists(Constants.LogPath))
+                Directory.CreateDirectory(Constants.LogPath);
+
             DBInitializer.Initialize();
             Instances.Create();
             Configs.Create();
@@ -258,26 +261,6 @@ namespace RXInstanceManager
             if (!PanelOperation.IsVisible)
                 return;
 
-            /*var storagePath = EditStoragePath.Text != Constants.EditEmptyValue.InstancePath ? EditStoragePath.Text : string.Empty;
-            if (_instance.StoragePath != storagePath && !string.IsNullOrEmpty(storagePath))
-            {
-                var yamlParser = new YamlParser(_yaml);
-                var certificatePath = yamlParser.SelectToken("$.common_config.DATA_PROTECTION_CERTIFICATE_FILE").ToString();
-                var certificate = GetCertificateBase64(storagePath, certificatePath);
-                if (!string.IsNullOrEmpty(certificate))
-                    _instance.Certificate = certificate;
-            }*/
-
-            var yamlNode = YamlWriter.GetVariablesNode(_instance.Config.Body);
-            yamlNode.Path = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-            yamlNode.Variables.Instance_name = _instance.Code;
-            yamlNode.Variables.Purpose = _instance.Name;
-            yamlNode.Variables.Database = _instance.DBName;
-            yamlNode.Variables.Http_port = _instance.Port.ToString();
-            yamlNode.Variables.Home_path = _instance.StoragePath;
-            yamlNode.Variables.Home_path_src = _instance.SourcesPath;
-            yamlNode.Save();
-
             _instance.Code = EditCode.Text != Constants.EditEmptyValue.Code ? EditCode.Text : string.Empty;
             _instance.Name = EditName.Text != Constants.EditEmptyValue.Name ? EditName.Text : string.Empty;
             _instance.DBName = EditDBName.Text != Constants.EditEmptyValue.DBName ? EditDBName.Text : string.Empty;
@@ -287,6 +270,9 @@ namespace RXInstanceManager
             _instance.SourcesPath = EditSourcesPath.Text != Constants.EditEmptyValue.SourcesPath ? EditSourcesPath.Text : string.Empty;
             _instance.Save();
 
+            _instance.Config.Save();
+            UpdateConfigVariables();
+
             PanelOperation.Visibility = Visibility.Hidden;
 
             LoadInstances(_instance);
@@ -294,6 +280,8 @@ namespace RXInstanceManager
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)
         {
+            PanelOperation.Visibility = Visibility.Hidden;
+
             LoadInstances(_instance);
         }
 
@@ -322,7 +310,7 @@ namespace RXInstanceManager
             var variablesNode = yamlParser.SelectToken("$.variables");
 
             var storagePath = variablesNode.AllNodes.Any(x => x.ToString() == "home_path") ? variablesNode["home_path"].ToString() : string.Empty;
-            var certificate = GetInstanceCertificate(config, storagePath);            
+            var certificate = GetInstanceCertificate(config, storagePath);
 
             var instanceCode = string.Empty;
             if (variablesNode.AllNodes.Any(x => x.ToString() == "instance_name"))
@@ -382,6 +370,7 @@ namespace RXInstanceManager
             }
 
             _instance = instance;
+            UpdateConfigVariables();
             LoadInstances(_instance);
         }
 
@@ -431,23 +420,23 @@ namespace RXInstanceManager
             {
                 RebuildConfig();
 
-                var serviceStatus = GetServiceStatus();
+                var serviceStatus = AppHandlers.GetServiceStatus(_instance);
                 if (serviceStatus == Constants.InstanceStatus.NeedInstall)
                 {
                     try
                     {
                         InstallInstance();
+                        serviceStatus = Constants.InstanceStatus.Working;
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
                     }
                     catch (Exception ex)
                     {
                         Dialogs.ShowInformationDialog(ex.Message + Environment.NewLine + ex.StackTrace);
                     }
                 }
-                else
-                {
-                    _instance.Status = serviceStatus;
-                    _instance.Save();
-                }
+
+                _instance.Status = serviceStatus;
+                _instance.Save();
 
                 LoadInstances(_instance);
             }
@@ -477,7 +466,7 @@ namespace RXInstanceManager
 
             try
             {
-                var serviceStatus = GetServiceStatus();
+                var serviceStatus = AppHandlers.GetServiceStatus(_instance);
                 if (serviceStatus != Constants.InstanceStatus.NeedInstall)
                 {
                     if (serviceStatus == Constants.InstanceStatus.Working)
@@ -519,6 +508,10 @@ namespace RXInstanceManager
                 Directory.Delete(_instance.InstancePath, true);
                 Directory.CreateDirectory(_instance.InstancePath);
 
+                if (_instance.Certificate != null)
+                    Certificates.Delete(_instance.Certificate);
+                if (_instance.Config != null)
+                    Configs.Delete(_instance.Config);
                 Instances.Delete(_instance);
             }
             catch (Exception ex)
@@ -550,7 +543,7 @@ namespace RXInstanceManager
         private void ButtonInstruction_Click(object sender, RoutedEventArgs e)
         {
             if (File.Exists("readme.txt"))
-                Dialogs.ShowInformationDialog(File.ReadAllText("readme.txt"));
+                Dialogs.ShowFileContentDialog("readme.txt");
         }
 
         #endregion
@@ -596,6 +589,7 @@ namespace RXInstanceManager
         {
             RestartInstance();
 
+            _instance.Config.Save();
             _instance.Status = Constants.InstanceStatus.Working;
             _instance.Save();
 

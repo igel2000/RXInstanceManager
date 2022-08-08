@@ -47,8 +47,8 @@ namespace RXInstanceManager
                 QueryGenerator.GenerateSelectQuery<Instance>(),
                 (instance, linkedCertificate, linkedConfig) =>
                 {
-                    instance.Certificate = linkedCertificate;
-                    instance.Config = linkedConfig;
+                    instance.Certificate = linkedCertificate != null && linkedCertificate.Id > 0 ? linkedCertificate : null;
+                    instance.Config = linkedConfig != null && linkedConfig.Id > 0 ? linkedConfig : null;
                     return instance;
                 },
                 splitOn: "Certificate, Config").ToList();

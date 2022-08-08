@@ -56,6 +56,9 @@
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.2.0.123\lib\net461\Dapper.dll</HintPath>
@@ -145,6 +148,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AppHandlers.cs" />
     <Compile Include="Dialogs\EnterValueDialog.xaml.cs">
       <DependentUpon>EnterValueDialog.xaml</DependentUpon>
     </Compile>
@@ -155,7 +159,7 @@
     <Compile Include="Entities\Controllers\Certificates.cs" />
     <Compile Include="Entities\Models\Config.cs" />
     <Compile Include="Entities\Models\Certificate.cs" />
-    <Compile Include="Handlers.cs" />
+    <Compile Include="MainWindowHandlers.cs" />
     <Page Include="Dialogs\EnterValueDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -240,6 +244,9 @@
     <AdditionalFiles Include="readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </AdditionalFiles>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="App.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

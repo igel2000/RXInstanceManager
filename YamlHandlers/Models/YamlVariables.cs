@@ -97,6 +97,33 @@ namespace YamlHandlers
 
         #endregion
 
+        #region instance_path
+
+        public string Instance_path_field { get; } = "instance_path";
+        public string Instance_path_old
+        {
+            get
+            {
+                return _instance_path_old;
+            }
+        }
+        public string Instance_path
+        {
+            get
+            {
+                return _instance_path;
+            }
+            set
+            {
+                _instance_path_old = _instance_path;
+                _instance_path = value;
+            }
+        }
+        private string _instance_path;
+        private string _instance_path_old;
+
+        #endregion
+
         #region home_path
 
         public string Home_path_field { get; } = "home_path";

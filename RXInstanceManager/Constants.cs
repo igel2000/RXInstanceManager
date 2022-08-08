@@ -8,6 +8,7 @@ namespace RXInstanceManager
 {
     public static class Constants
     {
+        public const string LogPath = "logs";
         public const string Protocol = "http";
         public const string Host = "localhost";
         public const string Service = "DirectumRXServiceRunner";
