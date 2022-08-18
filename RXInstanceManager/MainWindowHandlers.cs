@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -75,7 +74,7 @@ namespace RXInstanceManager
 
         private void ActionButtonVisibleChanging(string status = null)
         {
-            //ButtonCopy.Visibility = Visibility.Collapsed;
+            ButtonCopy.Visibility = Visibility.Collapsed;
             ButtonInstall.Visibility = Visibility.Collapsed;
             ButtonDelete.Visibility = Visibility.Collapsed;
             ButtonDDSStart.Visibility = Visibility.Collapsed;
@@ -153,9 +152,6 @@ namespace RXInstanceManager
 
         private static void InstallInstance()
         {
-            if (_instance.Certificate != null)
-                WriteCertificate(_instance.Certificate);
-
             var doPath = AppHelper.GetDoPath(_instance.InstancePath);
             if (File.Exists(_instance.InstancePath + "\\DevelopmentStudio.zip"))
                 LaunchProcess(doPath, $"do components add_package {_instance.InstancePath}\\DevelopmentStudio.zip");
@@ -166,10 +162,12 @@ namespace RXInstanceManager
 
             LaunchProcess(doPath, "do iis configure");
             LaunchProcess(doPath, "do db up");
-            LaunchProcess(doPath, "do all up");
+            LaunchProcess(doPath, "do generate_data_protection_cert_from_config");
             LaunchProcess(doPath, "do dds config_up");
+            LaunchProcess(doPath, "do all up");
 
-            ShowProcessLog();
+            AppHandlers.ShowProcessLog(_processLog);
+            _processLog = string.Empty;
         }
 
         private static void RestartInstance()
@@ -178,116 +176,8 @@ namespace RXInstanceManager
             LaunchProcess(doPath, "do dds config_up");
             LaunchProcess(doPath, "do all up");
 
-            ShowProcessLog();
-        }
-
-        private static void ShowProcessLog()
-        {
-            var log = Path.Combine(Constants.LogPath, "log_" + DateTime.Now.ToString("ddMMyyHHmm") + ".log");
-            File.WriteAllText(log, _processLog);
-
-            var process = new Process();
-            process.StartInfo.FileName = "notepad.exe";
-            process.StartInfo.Arguments = log;
-            process.Start();
-
+            AppHandlers.ShowProcessLog(_processLog);
             _processLog = string.Empty;
-        }
-
-        #endregion
-
-        #region Работа с сертификатом.
-
-        private static Certificate GetInstanceCertificate(Config config, string storagePath)
-        {
-            var certificate = Certificates.Get().FirstOrDefault();
-
-            if (!string.IsNullOrEmpty(storagePath) && Directory.Exists(storagePath))
-            {
-                var instances = Instances.Get();
-                if (instances.Any(x => x.StoragePath == storagePath && x.Certificate != null))
-                    return instances.First(x => x.StoragePath == storagePath).Certificate;
-
-                if (certificate == null || certificate.Body == null)
-                    certificate = CreateCertificate(config, storagePath);
-            }
-            else
-            {
-                if (certificate != null && certificate.Body != null)
-                    certificate = CopyCertificate(certificate);
-            }
-
-            return certificate;
-        }
-
-        private static Certificate CreateCertificate(Config config, string storagePath)
-        {
-            var yamlParser = new YamlParser(config.Body);
-            var certificatePath = yamlParser.SelectToken("$.common_config.DATA_PROTECTION_CERTIFICATE_FILE").ToString();
-            var certificateBody = GetCertificateBody(storagePath, certificatePath);
-
-            var certificate = new Certificate();
-            certificate.Body = certificateBody;
-            certificate.Path = certificatePath;
-            certificate.Save();
-
-            return certificate;
-        }
-
-        private static Certificate CopyCertificate(Certificate certificate)
-        {
-            var certificateNew = new Certificate();
-            certificateNew.Body = certificate.Body;
-            certificateNew.Path = certificate.Path;
-            certificateNew.Save();
-
-            return certificateNew;
-        }
-
-        private static void WriteCertificate(Certificate certificate)
-        {
-            if (string.IsNullOrEmpty(_instance.Config.Body))
-                return;
-
-            var yamlParser = new YamlParser(_instance.Config.Body);
-            var certificatePath = yamlParser.SelectToken("$.common_config.DATA_PROTECTION_CERTIFICATE_FILE").ToString();
-            if (!string.IsNullOrEmpty(certificatePath))
-            {
-                certificatePath = certificatePath.Replace("{{ home_path }}", _instance.StoragePath);
-                var dataProtectionPath = Path.GetDirectoryName(certificatePath);
-                if (!Directory.Exists(dataProtectionPath))
-                    Directory.CreateDirectory(dataProtectionPath);
-
-                if (certificate.Body != null)
-                    File.WriteAllBytes(certificatePath, certificate.Body);
-            }
-        }
-
-        private static byte[] GetCertificateBody(string storagePath, string certificatePath)
-        {
-            if (!string.IsNullOrEmpty(storagePath) && !string.IsNullOrEmpty(certificatePath))
-            {
-                certificatePath = certificatePath.Replace("{{ home_path }}", storagePath);
-                if (File.Exists(certificatePath))
-                    return File.ReadAllBytes(certificatePath);
-            }
-
-            return null;
-        }
-
-        #endregion
-
-        #region Работа с версиями.
-
-        private static string GetInstanceVersion(string instancePath)
-        {
-            var versionsPath = AppHelper.GetVersionsPath(instancePath);
-            if (!File.Exists(versionsPath))
-                return Constants.NullVersion;
-
-            var versions = File.ReadAllText(versionsPath);
-            var versionsParser = new YamlParser(versions);
-            return versionsParser.SelectToken("$.builds.platform_builds")["version"].ToString();
         }
 
         #endregion

@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Threading;
 using System.ServiceProcess;
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Win32;
 using SQLQueryGen;
 using YamlHandlers;
@@ -30,7 +31,6 @@ namespace RXInstanceManager
             DBInitializer.Initialize();
             Instances.Create();
             Configs.Create();
-            Certificates.Create();
 
             PanelOperation.Visibility = Visibility.Hidden;
 
@@ -261,21 +261,30 @@ namespace RXInstanceManager
             if (!PanelOperation.IsVisible)
                 return;
 
-            _instance.Code = EditCode.Text != Constants.EditEmptyValue.Code ? EditCode.Text : string.Empty;
-            _instance.Name = EditName.Text != Constants.EditEmptyValue.Name ? EditName.Text : string.Empty;
-            _instance.DBName = EditDBName.Text != Constants.EditEmptyValue.DBName ? EditDBName.Text : string.Empty;
-            _instance.Port = int.Parse(EditHttpPort.Text);
-            _instance.URL = AppHelper.GetClientURL(Constants.Protocol, Constants.Host, _instance.Port);
-            _instance.StoragePath = EditStoragePath.Text != Constants.EditEmptyValue.InstancePath ? EditStoragePath.Text : string.Empty;
-            _instance.SourcesPath = EditSourcesPath.Text != Constants.EditEmptyValue.SourcesPath ? EditSourcesPath.Text : string.Empty;
-            _instance.Save();
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            _instance.Config.Save();
-            UpdateConfigVariables();
+                _instance.Code = EditCode.Text != Constants.EditEmptyValue.Code ? EditCode.Text : string.Empty;
+                _instance.Name = EditName.Text != Constants.EditEmptyValue.Name ? EditName.Text : string.Empty;
+                _instance.DBName = EditDBName.Text != Constants.EditEmptyValue.DBName ? EditDBName.Text : string.Empty;
+                _instance.Port = int.Parse(EditHttpPort.Text);
+                _instance.URL = AppHelper.GetClientURL(Constants.Protocol, Constants.Host, _instance.Port);
+                _instance.StoragePath = EditStoragePath.Text != Constants.EditEmptyValue.InstancePath ? EditStoragePath.Text : string.Empty;
+                _instance.SourcesPath = EditSourcesPath.Text != Constants.EditEmptyValue.SourcesPath ? EditSourcesPath.Text : string.Empty;
+                _instance.Save();
 
-            PanelOperation.Visibility = Visibility.Hidden;
+                _instance.Config.Save();
+                UpdateConfigVariables();
 
-            LoadInstances(_instance);
+                PanelOperation.Visibility = Visibility.Hidden;
+
+                LoadInstances(_instance);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void ButtonCancel_Click(object sender, RoutedEventArgs e)
@@ -298,7 +307,7 @@ namespace RXInstanceManager
             var instancePath = dialog.FileName;
             ValidateDirectoryBeforeAddInstance(instancePath);
 
-            var version = GetInstanceVersion(instancePath);
+            var version = AppHandlers.GetInstanceVersion(instancePath);
             var config = GetInstanceConfig(instancePath, version);
             if (config == null)
             {
@@ -310,7 +319,6 @@ namespace RXInstanceManager
             var variablesNode = yamlParser.SelectToken("$.variables");
 
             var storagePath = variablesNode.AllNodes.Any(x => x.ToString() == "home_path") ? variablesNode["home_path"].ToString() : string.Empty;
-            var certificate = GetInstanceCertificate(config, storagePath);
 
             var instanceCode = string.Empty;
             if (variablesNode.AllNodes.Any(x => x.ToString() == "instance_name"))
@@ -360,7 +368,6 @@ namespace RXInstanceManager
                 instance.ServiceName = $"{Constants.Service}_{instanceCode}";
                 instance.Status = Constants.InstanceStatus.NeedInstall;
                 instance.Config = config;
-                instance.Certificate = certificate;
                 instance.Save();
             }
             catch (Exception ex)
@@ -444,106 +451,147 @@ namespace RXInstanceManager
 
         private void ButtonCopy_Click(object sender, RoutedEventArgs e)
         {
-
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void ButtonDelete_Click(object sender, RoutedEventArgs e)
         {
-            var acceptResult = MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
-                                               "Подтверждение удаления", MessageBoxButton.YesNo);
-
-            if (acceptResult != MessageBoxResult.Yes)
-                return;
-
-            if (Instances.Get().Count() == 1)
+            try
             {
-                acceptResult = MessageBox.Show("Вы удаляете последний экземпляр системы. Продолжить?",
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+                var acceptResult = MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
                                                "Подтверждение удаления", MessageBoxButton.YesNo);
 
                 if (acceptResult != MessageBoxResult.Yes)
                     return;
-            }
 
-            try
-            {
-                var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-                if (serviceStatus != Constants.InstanceStatus.NeedInstall)
+                if (Instances.Get().Count() == 1)
                 {
-                    if (serviceStatus == Constants.InstanceStatus.Working)
-                    {
-                        var service = new ServiceController(_instance.ServiceName);
-                        service.Stop();
+                    acceptResult = MessageBox.Show("Вы удаляете последний экземпляр системы. Продолжить?",
+                                                   "Подтверждение удаления", MessageBoxButton.YesNo);
 
-                        Thread.Sleep(TimeSpan.FromSeconds(10));
+                    if (acceptResult != MessageBoxResult.Yes)
+                        return;
+                }
+
+                try
+                {
+                    var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+                    if (serviceStatus != Constants.InstanceStatus.NeedInstall)
+                    {
+                        if (serviceStatus == Constants.InstanceStatus.Working)
+                        {
+                            var service = new ServiceController(_instance.ServiceName);
+                            service.Stop();
+
+                            Thread.Sleep(TimeSpan.FromSeconds(10));
+                        }
+
+                        // HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\<имя сервиса>
+                        using (var regKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                        {
+                            if (regKey != null && regKey.GetSubKeyNames().Any(x => x == _instance.ServiceName))
+                                regKey.DeleteSubKey(_instance.ServiceName, true);
+                        }
+
+                        MessageBox.Show("Была удалена служба Windows. Необходимо перезагрузить компьютер.");
                     }
 
-                    // HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\<имя сервиса>
-                    using (var regKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                    if (!string.IsNullOrEmpty(_instance.StoragePath) && Directory.Exists(_instance.StoragePath))
                     {
-                        if (regKey != null && regKey.GetSubKeyNames().Any(x => x == _instance.ServiceName))
-                            regKey.DeleteSubKey(_instance.ServiceName, true);
+                        var folder = new DirectoryInfo(_instance.StoragePath);
+                        folder.Attributes &= ~FileAttributes.ReadOnly;
+
+                        Directory.Delete(_instance.StoragePath, true);
+                        Directory.CreateDirectory(_instance.StoragePath);
                     }
 
-                    MessageBox.Show("Была удалена служба Windows. Необходимо перезагрузить компьютер.");
-                }
+                    if (!string.IsNullOrEmpty(_instance.SourcesPath) && Directory.Exists(_instance.SourcesPath))
+                    {
+                        var folder = new DirectoryInfo(_instance.SourcesPath);
+                        folder.Attributes &= ~FileAttributes.ReadOnly;
 
-                if (!string.IsNullOrEmpty(_instance.StoragePath) && Directory.Exists(_instance.StoragePath))
+                        Directory.Delete(_instance.SourcesPath, true);
+                        Directory.CreateDirectory(_instance.SourcesPath);
+                    }
+
+                    Directory.Delete(_instance.InstancePath, true);
+                    Directory.CreateDirectory(_instance.InstancePath);
+
+                    if (_instance.Config != null)
+                        Configs.Delete(_instance.Config);
+                    Instances.Delete(_instance);
+                }
+                catch (Exception ex)
                 {
-                    var folder = new DirectoryInfo(_instance.StoragePath);
-                    folder.Attributes &= ~FileAttributes.ReadOnly;
-
-                    Directory.Delete(_instance.StoragePath, true);
-                    Directory.CreateDirectory(_instance.StoragePath);
+                    Dialogs.ShowInformationDialog(ex.Message + Environment.NewLine + ex.StackTrace);
                 }
 
-                if (!string.IsNullOrEmpty(_instance.SourcesPath) && Directory.Exists(_instance.SourcesPath))
-                {
-                    var folder = new DirectoryInfo(_instance.SourcesPath);
-                    folder.Attributes &= ~FileAttributes.ReadOnly;
-
-                    Directory.Delete(_instance.SourcesPath, true);
-                    Directory.CreateDirectory(_instance.SourcesPath);
-                }
-
-                Directory.Delete(_instance.InstancePath, true);
-                Directory.CreateDirectory(_instance.InstancePath);
-
-                if (_instance.Certificate != null)
-                    Certificates.Delete(_instance.Certificate);
-                if (_instance.Config != null)
-                    Configs.Delete(_instance.Config);
-                Instances.Delete(_instance);
+                LoadInstances();
+                ActionButtonVisibleChanging();
             }
             catch (Exception ex)
             {
-                Dialogs.ShowInformationDialog(ex.Message + Environment.NewLine + ex.StackTrace);
+                AppHandlers.ErrorHandler(_instance, ex);
             }
-
-            LoadInstances();
-            ActionButtonVisibleChanging();
         }
 
         private void ButtonDDSStart_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_instance.StoragePath))
+            try
             {
-                MessageBox.Show("Не указана папка исходников");
-                return;
-            }
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            LaunchProcess(AppHelper.GetDDSPath(_instance.InstancePath));
+                if (string.IsNullOrEmpty(_instance.StoragePath))
+                {
+                    MessageBox.Show("Не указана папка исходников");
+                    return;
+                }
+
+                LaunchProcess(AppHelper.GetDDSPath(_instance.InstancePath));
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void ButtonRXStart_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(EditURL.Text))
-                Process.Start(EditURL.Text);
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+                if (!string.IsNullOrEmpty(EditURL.Text))
+                    Process.Start(EditURL.Text);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void ButtonInstruction_Click(object sender, RoutedEventArgs e)
         {
-            if (File.Exists("readme.txt"))
-                Dialogs.ShowFileContentDialog("readme.txt");
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+                if (File.Exists("readme.txt"))
+                    Dialogs.ShowFileContentDialog("readme.txt");
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         #endregion
@@ -552,48 +600,84 @@ namespace RXInstanceManager
 
         private void StartContext_Click(object sender, RoutedEventArgs e)
         {
-            var service = new ServiceController(_instance.ServiceName);
-            service.Start();
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            _instance.Status = Constants.InstanceStatus.Working;
-            _instance.Save();
+                var service = new ServiceController(_instance.ServiceName);
+                service.Start();
 
-            LoadInstances(_instance);
+                _instance.Status = Constants.InstanceStatus.Working;
+                _instance.Save();
+
+                LoadInstances(_instance);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void StopContext_Click(object sender, RoutedEventArgs e)
         {
-            var service = new ServiceController(_instance.ServiceName);
-            service.Stop();
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            _instance.Status = Constants.InstanceStatus.Stopped;
-            _instance.Save();
+                var service = new ServiceController(_instance.ServiceName);
+                service.Stop();
 
-            LoadInstances(_instance);
+                _instance.Status = Constants.InstanceStatus.Stopped;
+                _instance.Save();
+
+                LoadInstances(_instance);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void ConfigContext_Click(object sender, RoutedEventArgs e)
         {
-            var config = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-            if (File.Exists(config))
+            try
             {
-                var process = new Process();
-                process.StartInfo.FileName = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-                process.Start();
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+                var config = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+                if (File.Exists(config))
+                {
+                    var process = new Process();
+                    process.StartInfo.FileName = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+                    process.Start();
+                }
+                else
+                    MessageBox.Show("Конфигурационный файл не найден");
             }
-            else
-                MessageBox.Show("Конфигурационный файл не найден");
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         private void RestartContext_Click(object sender, RoutedEventArgs e)
         {
-            RestartInstance();
+            try
+            {
+                AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            _instance.Config.Save();
-            _instance.Status = Constants.InstanceStatus.Working;
-            _instance.Save();
+                RestartInstance();
 
-            LoadInstances(_instance);
+                _instance.Config.Save();
+                _instance.Status = Constants.InstanceStatus.Working;
+                _instance.Save();
+
+                LoadInstances(_instance);
+            }
+            catch (Exception ex)
+            {
+                AppHandlers.ErrorHandler(_instance, ex);
+            }
         }
 
         #endregion

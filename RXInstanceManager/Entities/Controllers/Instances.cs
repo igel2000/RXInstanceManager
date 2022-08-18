@@ -43,15 +43,14 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                return connection.Query<Instance, Certificate, Config, Instance>(
+                return connection.Query<Instance, Config, Instance>(
                 QueryGenerator.GenerateSelectQuery<Instance>(),
-                (instance, linkedCertificate, linkedConfig) =>
+                (instance, linkedConfig) =>
                 {
-                    instance.Certificate = linkedCertificate != null && linkedCertificate.Id > 0 ? linkedCertificate : null;
                     instance.Config = linkedConfig != null && linkedConfig.Id > 0 ? linkedConfig : null;
                     return instance;
                 },
-                splitOn: "Certificate, Config").ToList();
+                splitOn: "Config").ToList();
             }
         }
 

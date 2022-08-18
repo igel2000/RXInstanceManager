@@ -46,7 +46,7 @@ namespace RXInstanceManager
 
         public static bool ValidateInputDBName(string name)
         {
-            return name.Length >= 3 && name.Length <= 25 && name.All(x => (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9'));
+            return name.Length >= 3 && name.Length <= 25 && name.All(x => (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9') || (x == '_'));
         }
 
         public static bool ValidateInputPort(string port)

@@ -45,10 +45,6 @@ namespace RXInstanceManager
         [Field("status", Size = 12)]
         public string Status { get; set; }
 
-        [Field("certificate")]
-        [Navigate(TableName = "certificate", FieldName = "id", Required = false)]
-        public Certificate Certificate { get; set; }
-
         [Field("config")]
         [Navigate(TableName = "config", FieldName = "id", Required = false)]
         public Config Config { get; set; }
