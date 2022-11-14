@@ -20,7 +20,7 @@
         <!-- <requestedExecutionLevel level="asInvoker" uiAccess="false" />-->
         <!-- Для принудительного запуска приложения от администратора раскомментировать строку ниже-->
         <!-- <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />-->
-        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>

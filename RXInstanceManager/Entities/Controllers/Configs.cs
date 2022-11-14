@@ -26,7 +26,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                config.Id = connection.QuerySingle<int>(QueryGenerator.GenerateInsertQuery<Config>(config));
+                config.Id = connection.QuerySingle<int>(DBInitializer.QueryGenerator.GenerateInsertQuery<Config>(config));
             }
         }
 
@@ -34,7 +34,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateUpdateQuery<Config>(config));
+                connection.Execute(DBInitializer.QueryGenerator.GenerateUpdateQuery<Config>(config));
             }
         }
 
@@ -46,7 +46,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                return connection.Query<Config>(QueryGenerator.GenerateSelectQuery<Config>()).ToList();
+                return connection.Query<Config>(DBInitializer.QueryGenerator.GenerateSelectQuery<Config>()).ToList();
             }
         }
 
@@ -54,8 +54,8 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                var addWhere = new AddWhere<Config>("Version", QueryConstants.Expression.LessOrEqual, version);
-                return connection.Query<Config>(QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
+                var addWhere = new AddWhere<Config>("Version", SQLQueryGen.Constants.Expression.LessOrEqual, version);
+                return connection.Query<Config>(DBInitializer.QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
             }
         }
 
@@ -63,8 +63,8 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                var addWhere = new AddWhere<Config>("Version", QueryConstants.Expression.GreaterOrEqual, version);
-                return connection.Query<Config>(QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
+                var addWhere = new AddWhere<Config>("Version", SQLQueryGen.Constants.Expression.MoreOrEqual, version);
+                return connection.Query<Config>(DBInitializer.QueryGenerator.GenerateSelectQuery<Config>(addWhere)).ToList();
             }
         }
 
@@ -76,7 +76,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateDeleteQuery<Config>(config));
+                connection.Execute(DBInitializer.QueryGenerator.GenerateDeleteQuery<Config>(config));
                 config = null;
             }
         }
@@ -89,7 +89,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateCreateQuery<Config>());
+                connection.Execute(DBInitializer.QueryGenerator.GenerateCreateQuery<Config>());
             }
         }
 
