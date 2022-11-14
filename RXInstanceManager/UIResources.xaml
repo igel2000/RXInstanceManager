@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:SaveDB">
+                    xmlns:local="clr-namespace:RXInstanceManager">
 
     <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
         <Setter Property="ColumnHeaderStyle" Value="{DynamicResource ColumnHeaderStyle}"/>

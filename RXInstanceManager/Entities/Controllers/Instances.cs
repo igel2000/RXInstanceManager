@@ -23,7 +23,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                instance.Id = connection.QuerySingle<int>(QueryGenerator.GenerateInsertQuery<Instance>(instance));
+                instance.Id = connection.QuerySingle<int>(DBInitializer.QueryGenerator.GenerateInsertQuery<Instance>(instance));
             }
         }
 
@@ -31,7 +31,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateUpdateQuery<Instance>(instance));
+                connection.Execute(DBInitializer.QueryGenerator.GenerateUpdateQuery<Instance>(instance));
             }
         }
 
@@ -43,15 +43,14 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                return connection.Query<Instance, Certificate, Config, Instance>(
-                QueryGenerator.GenerateSelectQuery<Instance>(),
-                (instance, linkedCertificate, linkedConfig) =>
+                return connection.Query<Instance, Config, Instance>(
+                DBInitializer.QueryGenerator.GenerateSelectQuery<Instance>(),
+                (instance, linkedConfig) =>
                 {
-                    instance.Certificate = linkedCertificate != null && linkedCertificate.Id > 0 ? linkedCertificate : null;
                     instance.Config = linkedConfig != null && linkedConfig.Id > 0 ? linkedConfig : null;
                     return instance;
                 },
-                splitOn: "Certificate, Config").ToList();
+                splitOn: "Config").ToList();
             }
         }
 
@@ -63,7 +62,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateDeleteQuery<Instance>(instance));
+                connection.Execute(DBInitializer.QueryGenerator.GenerateDeleteQuery<Instance>(instance));
                 instance = null;
             }
         }
@@ -76,7 +75,7 @@ namespace RXInstanceManager
         {
             using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
             {
-                connection.Execute(QueryGenerator.GenerateCreateQuery<Instance>());
+                connection.Execute(DBInitializer.QueryGenerator.GenerateCreateQuery<Instance>());
             }
         }
 

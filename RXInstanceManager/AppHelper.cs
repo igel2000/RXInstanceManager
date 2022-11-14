@@ -46,7 +46,7 @@ namespace RXInstanceManager
 
         public static bool ValidateInputDBName(string name)
         {
-            return name.Length >= 3 && name.Length <= 25 && name.All(x => (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9'));
+            return name.Length >= 3 && name.Length <= 25 && name.All(x => (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9') || (x == '_'));
         }
 
         public static bool ValidateInputPort(string port)
@@ -54,19 +54,34 @@ namespace RXInstanceManager
             return port.Length <= 10 && port.All(x => (x >= '0' && x <= '9'));
         }
 
+        public static string GetDirectumLauncherPath(string instancePath)
+        {
+            return Path.Combine(instancePath, "DirectumLauncher.exe");
+        }
+
         public static string GetConfigYamlPath(string instancePath)
         {
             return Path.Combine(instancePath, "etc", "config.yml");
         }
 
-        public static string GetVersionsPath(string instancePath)
+        public static string GetConfigYamlExamplePath(string instancePath)
         {
-            return Path.Combine(instancePath, "etc", "_builds", "version.txt");
+            return Path.Combine(instancePath, "etc", "config.yml.example");
         }
 
-        public static string GetDoPath(string instancePath)
+        public static string GetBuildsPath(string instancePath)
         {
-            return Path.Combine(instancePath, "do.bat");
+            return Path.Combine(instancePath, "etc", "_builds");
+        }
+
+        public static string GetPlatformBuildsPath(string instancePath)
+        {
+            return Path.Combine(instancePath, "etc", "_builds", "PlatformBuilds");
+        }
+
+        public static string GetDirectumRXBuildsPath(string instancePath)
+        {
+            return Path.Combine(instancePath, "etc", "_builds", "DirectumRX");
         }
 
         public static string GetDDSPath(string instancePath)
@@ -81,9 +96,19 @@ namespace RXInstanceManager
 
         public static string GetDBNameFromConnectionString(string engine, string connectionString)
         {
-            var databaseNameParam = connectionString.Split(';').FirstOrDefault(x => x.Contains("initial catalog"));
-            if (databaseNameParam != null)
-                return databaseNameParam.Split('=')[1];
+            if (engine == "mssql")
+            {
+                var databaseNameParam = connectionString.Split(';').FirstOrDefault(x => x.Contains("initial catalog"));
+                if (databaseNameParam != null)
+                    return databaseNameParam.Split('=')[1];
+            }
+
+            if (engine == "postgres")
+            {
+                var databaseNameParam = connectionString.Split(';').FirstOrDefault(x => x.Contains("Database"));
+                if (databaseNameParam != null)
+                    return databaseNameParam.Split('=')[1];
+            }
 
             return null;
         }
@@ -101,6 +126,35 @@ namespace RXInstanceManager
             }
 
             return true;
+        }
+
+        public static DateTime GetFileChangeTime(string path)
+        {
+            if (!File.Exists(path))
+                return DateTime.MinValue;
+
+            return File.GetLastWriteTime(path);
+        }
+
+        public static bool EqualsUpToSeconds(this DateTime dt1, DateTime dt2)
+        {
+            var date1 = dt1.Date.AddHours(dt1.Hour).AddMinutes(dt1.Minute).AddSeconds(dt1.Second);
+            var date2 = dt2.Date.AddHours(dt2.Hour).AddMinutes(dt2.Minute).AddSeconds(dt2.Second);
+            return date1.Equals(date2);
+        }
+
+        public static bool LessThanUpToSeconds(this DateTime dt1, DateTime dt2)
+        {
+            var date1 = dt1.Date.AddHours(dt1.Hour).AddMinutes(dt1.Minute).AddSeconds(dt1.Second);
+            var date2 = dt2.Date.AddHours(dt2.Hour).AddMinutes(dt2.Minute).AddSeconds(dt2.Second);
+            return date1 < date2;
+        }
+
+        public static bool MoreThanUpToSeconds(this DateTime dt1, DateTime dt2)
+        {
+            var date1 = dt1.Date.AddHours(dt1.Hour).AddMinutes(dt1.Minute).AddSeconds(dt1.Second);
+            var date2 = dt2.Date.AddHours(dt2.Hour).AddMinutes(dt2.Minute).AddSeconds(dt2.Second);
+            return date1 > date2;
         }
     }
 }

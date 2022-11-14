@@ -24,6 +24,6 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="20" />
         </Grid.RowDefinitions>
-        <TextBox x:Name="Input" Grid.Row="1" Grid.Column="1" Width="800" Height="450" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+        <TextBox x:Name="Input" Grid.Row="1" Grid.Column="1" Width="800" Height="450" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Courier New"/>
     </Grid>
 </Window>

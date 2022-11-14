@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using SQLQueryGen;
 
 namespace RXInstanceManager
@@ -45,12 +46,24 @@ namespace RXInstanceManager
         [Field("status", Size = 12)]
         public string Status { get; set; }
 
-        [Field("certificate")]
-        [Navigate(TableName = "certificate", FieldName = "id", Required = false)]
-        public Certificate Certificate { get; set; }
-
         [Field("config")]
         [Navigate(TableName = "config", FieldName = "id", Required = false)]
         public Config Config { get; set; }
+
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Код:                " + Code ?? string.Empty);
+            builder.AppendLine("Назначениие:        " + Name ?? string.Empty);
+            builder.AppendLine("URL:                " + URL ?? string.Empty);
+            builder.AppendLine("Версия платформы:   " + PlatformVersion ?? string.Empty);
+            builder.AppendLine("Версия решения:     " + SolutionVersion ?? string.Empty);
+            builder.AppendLine("Путь до инстанса:   " + InstancePath ?? string.Empty);
+            builder.AppendLine("Путь до хранилища:  " + StoragePath ?? string.Empty);
+            builder.AppendLine("Путь до исходников: " + SourcesPath ?? string.Empty);
+            builder.AppendLine("Имя службы:         " + ServiceName ?? string.Empty);
+            builder.AppendLine("Имя БД:             " + DBName ?? string.Empty);
+            return builder.ToString();
+        }
     }
 }

@@ -17,16 +17,18 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="40" />
             <ColumnDefinition />
-            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="40" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="40" />
             <RowDefinition />
             <RowDefinition Height="30" />
         </Grid.RowDefinitions>
-        <Button x:Name="MainButton" Grid.Column="0" Grid.Row="0" Width="150" Background="#222b34" />
-        <StackPanel Orientation="Horizontal" Style="{DynamicResource HeaderStackPanel}" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"/>
+        <Button x:Name="HiddenButton" Grid.Column="0" Grid.Row="0" Width="150" Background="#222b34" Click="HiddenButton_Click" />
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
         <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Background="#2C353C" />
+        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="#5b5f6a" />
         <Grid Grid.Row="1" Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50"/>
@@ -36,69 +38,33 @@
                 <Button x:Name="ButtonInstruction" Content="Инструкция" Style="{DynamicResource RecordActionButton}" Background="DimGray" Click="ButtonInstruction_Click" />
                 <Button x:Name="ButtonAdd" Content="Добавить" Style="{DynamicResource RecordActionButton}" Margin="10,5,5,5" Background="SkyBlue" Click="ButtonAdd_Click" />
                 <Button x:Name="ButtonInstall" Content="Установить" Style="{DynamicResource RecordActionButton}" Background="MediumSlateBlue" Click="ButtonInstall_Click" />
-                <Button x:Name="ButtonCopy" Content="Копировать" Style="{DynamicResource RecordActionButton}" Background="ForestGreen" Click="ButtonCopy_Click" />
                 <Button x:Name="ButtonDelete" Content="Удалить" Style="{DynamicResource RecordActionButton}" Background="OrangeRed" Click="ButtonDelete_Click" />
+                <Button x:Name="ButtonCopy" Content="Копировать" Style="{DynamicResource RecordActionButton}" Background="ForestGreen" Click="ButtonCopy_Click" />
+                <Button x:Name="ButtonStart" Content="Запустить" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStart_Click" />
+                <Button x:Name="ButtonStop" Content="Остановить" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
                 <Button x:Name="ButtonDDSStart" Content="Запустить DDS" Style="{DynamicResource RecordActionButton}" Background="GreenYellow" Click="ButtonDDSStart_Click" />
                 <Button x:Name="ButtonRXStart" Content="Запустить RX" Style="{DynamicResource RecordActionButton}" Background="Violet" Click="ButtonRXStart_Click" />
             </StackPanel>
             <DataGrid x:Name="GridInstances" AutoGenerateColumns="False" Style="{DynamicResource DataGridStyle}" Grid.Row="1" SelectionChanged="GridInstances_SelectionChanged" >
                 <DataGrid.Columns>
                     <DataGridTextColumn Binding="{Binding Code}" Header="Код" Width="70" />
-                    <DataGridTextColumn Binding="{Binding PlatformVersion}" Header="Версия" Width="80" />
-                    <DataGridTextColumn Binding="{Binding InstancePath}" Header="Путь" Width="150" />
-                    <DataGridTextColumn Binding="{Binding URL}" Header="URL" Width="150" />
+                    <DataGridTextColumn Binding="{Binding SolutionVersion}" Header="Версия" Width="80" />
+                    <DataGridTextColumn Binding="{Binding InstancePath}" Header="Путь" Width="250" />
+                    <DataGridTextColumn Binding="{Binding URL}" Header="URL" Width="200" />
                     <DataGridTextColumn Binding="{Binding DBName}" Header="Имя БД" Width="100" />
                     <DataGridTextColumn Binding="{Binding Status}" Header="Статус" Width="80" />
                     <DataGridTextColumn Binding="{Binding Name}" Header="Назначение" Width="250" />
                 </DataGrid.Columns>
                 <DataGrid.ContextMenu>
                     <ContextMenu x:Name="InstancesContextMenu">
-                        <MenuItem x:Name="StartContext" Header="Запустить службу" Click="StartContext_Click" />
-                        <MenuItem x:Name="StopContext" Header="Остановить службу" Click="StopContext_Click" />
                         <MenuItem x:Name="ConfigContext" Header="Открыть config.yml" Click="ConfigContext_Click" />
                         <MenuItem x:Name="RestartContext" Header="Пересобрать из config.yml" Click="RestartContext_Click" />
+                        <MenuItem x:Name="CmdContext" Header="Запустить cmd" Click="CmdContext_Click" />
+                        <MenuItem x:Name="CmdAdminContext" Header="Запустить cmd (от администратора)" Click="CmdAdminContext_Click" />
+                        <MenuItem x:Name="InfoContext" Header="Информация" Click="InfoContext_Click" />
                     </ContextMenu>
                 </DataGrid.ContextMenu>
             </DataGrid>
-        </Grid>
-        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Background="#5b5f6a">
-            <TextBox x:Name="EditCode" Style="{DynamicResource EditTextBoxEmpty}" Margin="8,5" GotFocus="EditCode_GotFocus" LostFocus="EditCode_LostFocus" PreviewKeyDown="EditCode_PreviewKeyDown" TextChanged="EditCode_TextChanged" />
-            <TextBox x:Name="EditName" Style="{DynamicResource EditTextBoxEmpty}" Margin="8,5" GotFocus="EditName_GotFocus" LostFocus="EditName_LostFocus" PreviewKeyDown="EditName_PreviewKeyDown" TextChanged="EditName_TextChanged" />
-            <StackPanel Orientation="Horizontal" Margin="8,5">
-                <TextBox x:Name="EditURL" Width="250" Style="{DynamicResource EditTextBoxEmpty}" IsReadOnly="True" />
-                <Button x:Name="ButtonURL" Content=">>>" Width="30" Style="{DynamicResource LeftPanelPassiveButton}" Click="ButtonURL_Click" />
-            </StackPanel>
-            <TextBox x:Name="EditHttpPort" Style="{DynamicResource EditTextBoxEmpty}" Margin="8,5" GotFocus="EditHttpPort_GotFocus" LostFocus="EditHttpPort_LostFocus" PreviewKeyDown="EditHttpPort_PreviewKeyDown" TextChanged="EditHttpPort_TextChanged" />
-            <TextBox x:Name="EditDBName" Style="{DynamicResource EditTextBoxEmpty}" Margin="8,5" GotFocus="EditDBName_GotFocus" LostFocus="EditDBName_LostFocus" PreviewKeyDown="EditDBName_PreviewKeyDown" TextChanged="EditDBName_TextChanged" />
-            <TextBox x:Name="EditServiceName" Style="{DynamicResource EditTextBoxEmpty}" Margin="8,5" IsReadOnly="True" />
-            <StackPanel Orientation="Horizontal" Margin="8,5">
-                <TextBox x:Name="EditStoragePath" Width="250" Style="{DynamicResource EditTextBoxEmpty}" IsReadOnly="True" />
-                <Button x:Name="ButtonStoragePath" Content="..." Width="30" Style="{DynamicResource LeftPanelPassiveButton}" Click="ButtonStoragePath_Click" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="8,5">
-                <TextBox x:Name="EditSourcesPath" Width="250" Style="{DynamicResource EditTextBoxEmpty}" IsReadOnly="True" />
-                <Button x:Name="ButtonSourcesPath" Content="..." Width="30" Style="{DynamicResource LeftPanelPassiveButton}" Click="ButtonSourcesPath_Click" />
-            </StackPanel>
-        </StackPanel>
-        <Grid x:Name="PanelOperation" VerticalAlignment="Bottom" Grid.Row="1" Grid.Column="2" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
-                <RowDefinition Height="40"/>
-            </Grid.RowDefinitions>
-            <Button x:Name="ButtonSave" Content="Сохранить" Style="{DynamicResource SaveCancelButton}" Margin="8,5" Grid.Column="0" Grid.Row="0" Click="ButtonSave_Click" />
-            <Button x:Name="ButtonCancel" Content="Отмена" Style="{DynamicResource SaveCancelButton}" Margin="8,5" Grid.Column="1" Grid.Row="1" Click="ButtonCancel_Click" />
-        </Grid>
-        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="#222b34">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="400" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="150" />
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="EditInstanceCode" IsReadOnly="True" Text="Код:" Style="{DynamicResource IDShowTextBox}" Grid.Column="3" Padding="6" />
         </Grid>
     </Grid>
 </Window>
