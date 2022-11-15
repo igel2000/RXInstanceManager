@@ -1,5 +1,5 @@
 # Описание утилиты RX Instance Manager
-![](https://github.com/AndreyMas/RXInstanceManager/releases/download/v0.9.04082022/v0904082022.png)
+![](https://github.com/AndreyMas/RXInstanceManager/releases/download/v0.9.15112022/RXInstanceManager_15112022.png)
 Утилита позволяет настраивать экземпляры системы Directum RX на серверах разработки прикладных и заказных проектов.
 
 Под экземпляром системы понимается набор, состоящий из:
@@ -19,7 +19,7 @@
 Текущая версия совместима с версиями DirectumLauncher: 4.2, 4.3, 4.4, 4.5.
 
 ## Установка утилиты
-Установка осуществляется из самораспаковывающегося архива: [Последняя версия](https://github.com/AndreyMas/RXInstanceManager/releases/download/v0.9.08082022/RXInstanceManager_08082022.exe).
+Установка осуществляется из самораспаковывающегося архива: [Последняя версия](https://github.com/AndreyMas/RXInstanceManager/releases/download/v0.9.15112022/RXInstanceManager_15112022.exe).
 
 После распаковки необходимо запустить RXInstanceManager.exe. Рекомендуется вынести ярлык на рабочий стол или закрепить в панели быстрого доступа или на начальном экране в меню "Пуск".
 
