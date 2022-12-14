@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -79,15 +79,22 @@ namespace RXInstanceManager
 
             var protocol = yamlValues.GetConfigStringValue("variables.protocol");
             var host = yamlValues.GetConfigStringValue("variables.host_fqdn");
-            var dbEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
+
+            instance.DBEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
             var connection = yamlValues.GetConfigStringValue("common_config.CONNECTION_STRING");
-            var dbName = AppHelper.GetDBNameFromConnectionString(dbEngine, connection);
+            instance.ServerDB = AppHelper.GetServerFromConnectionString(instance.DBEngine, connection);
+            var dbName = AppHelper.GetDBNameFromConnectionString(instance.DBEngine, connection);
+            if (dbName == "{{ database }}")
+               dbName = yamlValues.GetConfigStringValue("variables.database");
+            instance.DBName = dbName ?? string.Empty;
 
             instance.Name = yamlValues.GetConfigStringValue("variables.purpose");
+            instance.ProjectConfigPath =   yamlValues.GetConfigStringValue("variables.project_config_path");
             instance.Port = yamlValues.GetConfigIntValue("variables.http_port") ?? 0;
             instance.URL = AppHelper.GetClientURL(protocol, host, instance.Port);
-            instance.DBName = dbName ?? string.Empty;
             instance.StoragePath = yamlValues.GetConfigStringValue("variables.home_path");
+            if (instance.StoragePath == "{{ home_path_src }}")
+                instance.StoragePath = yamlValues.GetConfigStringValue("variables.home_path_src");
             instance.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
             instance.PlatformVersion = GetInstancePlatformVersion(instance.InstancePath);
             instance.SolutionVersion = GetInstanceSolutionVersion(instance.InstancePath);

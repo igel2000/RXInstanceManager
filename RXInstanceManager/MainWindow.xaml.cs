@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Threading;
 using System.Reflection;
 using Microsoft.Win32;
+using System.Windows.Forms;
 
 namespace RXInstanceManager
 {
@@ -68,13 +69,13 @@ namespace RXInstanceManager
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
+      if (_instance == null || _instance.Status != Constants.InstanceStatus.Working)
         return;
 
       try
       {
         var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
+        if (serviceStatus == Constants.InstanceStatus.Working)
           AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all down", true, true);
       }
       catch (Exception ex)
@@ -110,7 +111,7 @@ namespace RXInstanceManager
 
           if (!AppHelper.ValidateInputCode(instanceCode))
           {
-            MessageBox.Show("Код должен быть более от 4 до 10 символов английского алфавита в нижнем регистре и цифр");
+            System.Windows.MessageBox.Show("Код должен быть более от 4 до 10 символов английского алфавита в нижнем регистре и цифр");
             return;
           }
         }
@@ -118,7 +119,7 @@ namespace RXInstanceManager
         instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
         if (instance != null)
         {
-          MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
+          System.Windows.MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
           LoadInstances(instance);
           return;
         }
@@ -195,7 +196,7 @@ namespace RXInstanceManager
 
       try
       {
-        var acceptResult = MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
+        var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
                                            "Подтверждение удаления", MessageBoxButton.YesNo);
 
         if (acceptResult != MessageBoxResult.Yes)
@@ -249,7 +250,7 @@ namespace RXInstanceManager
       {
         if (string.IsNullOrEmpty(_instance.StoragePath))
         {
-          MessageBox.Show("Не указана папка исходников");
+          System.Windows.MessageBox.Show("Не указана папка исходников");
           return;
         }
 
@@ -300,38 +301,96 @@ namespace RXInstanceManager
         {
             AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            try
+
+
+      try
             {
-                var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-                if (File.Exists(configYamlPath))
-                    AppHandlers.LaunchProcess(AppHelper.GetConfigYamlPath(_instance.InstancePath));
+        var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+        if (File.Exists(configYamlPath))
+          AppHandlers.LaunchProcess(AppHelper.GetConfigYamlPath(_instance.InstancePath));
                 else
-                    MessageBox.Show("Конфигурационный файл не найден");
-            }
+          System.Windows.MessageBox.Show("Конфигурационный файл не найден");
+      }
             catch (Exception ex)
             {
                 AppHandlers.ErrorHandler(_instance, ex);
             }
         }
 
-        private void RestartContext_Click(object sender, RoutedEventArgs e)
+    private void ProjectConfigContext_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      try
+      {
+        var configYamlPath = _instance.ProjectConfigPath;
+        if (File.Exists(configYamlPath))
+          AppHandlers.LaunchProcess(configYamlPath);
+        else
+          System.Windows.MessageBox.Show(string.Format("Конфигурационный файл не найден {0}", configYamlPath));
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ChangeProject_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+      {
+        var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
+        openFileDialog.InitialDirectory = Path.GetDirectoryName(_instance.ProjectConfigPath);
+        openFileDialog.Filter = filter;
+        openFileDialog.FilterIndex = 1;
+        openFileDialog.RestoreDirectory = true;
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+          var config_filename = openFileDialog.FileName;
 
-            try
-            {
-                AppHandlers.ExecuteDoCommands(_instance.InstancePath, "do all config_up", "do dds config_up", "do all up",
-                    @"REG ADD HKLM\SYSTEM\CurrentControlSet\Services\" + _instance.ServiceName + " /v Start /t REG_DWORD /d 3 /f");
-                AppHandlers.UpdateInstanceData(_instance);
-                LoadInstances(_instance);
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
+          try
+          {
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map set {0} -rundds=False -pause", config_filename), true, true);
+          }
+          catch (Exception ex)
+          {
+            AppHandlers.ErrorHandler(_instance, ex);
+          }
+
         }
+      }
+    }
 
-        private void CmdContext_Click(object sender, RoutedEventArgs e)
+    private void UpdateConfig_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+      {
+        var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
+        openFileDialog.InitialDirectory =  string.IsNullOrEmpty(_instance.ProjectConfigPath) ? "C:\\" : Path.GetDirectoryName(_instance.ProjectConfigPath);
+        openFileDialog.Filter = filter;
+        openFileDialog.FilterIndex = 1;
+        openFileDialog.RestoreDirectory = true;
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+          var config_filename = openFileDialog.FileName;
+          try
+          {
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map update_config {0} -rundds=False -pause", config_filename), true, true);
+          }
+          catch (Exception ex)
+          {
+            AppHandlers.ErrorHandler(_instance, ex);
+          }
+
+        }
+      }
+    }
+
+    private void CmdContext_Click(object sender, RoutedEventArgs e)
         {
             AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
@@ -387,31 +446,21 @@ namespace RXInstanceManager
 
         private void HiddenButton_Click(object sender, RoutedEventArgs e)
         {
-            //var process = new Process();
-            //process.StartInfo.FileName = Path.Combine(_instance.InstancePath, "DirectumLauncher.exe");
-            //process.Start();
 
-            //var process = new Process();
-            //process.StartInfo.FileName = "cmd";
-            //process.StartInfo.Arguments = "/user:Administrator \"cmd /K cd " + _instance.InstancePath + "\"";
-            //process.Start();
+      if (_instance == null)
+        return;
 
-            //var process = new Process();
-            //var startInfo = new ProcessStartInfo();
-            //startInfo.FileName = "cmd.exe";
-            //startInfo.Arguments = "\"cmd /K cd " + _instance.InstancePath + "\"";
-            //startInfo.Verb = "runas";
-            //process.StartInfo = startInfo;
-            //process.Start();
-
-            //var content = File.ReadAllText(@"C:\Temp\config.yml");
-            //var yaml = new YamlParser(content);
-
-            //MessageBox.Show(AppHandlers.GetInstanceSolutionVersion(_instance.InstancePath));
-
-            AppHandlers.SetConfigStringValue(_instance.Config, "variables.instance_name", "test");
-        }
-
+      try
+      {
+         AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "map current -pause", true, true);
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
 
     }
+
+
+  }
 }

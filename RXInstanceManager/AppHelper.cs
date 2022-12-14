@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -98,10 +98,42 @@ namespace RXInstanceManager
             return Path.Combine(instancePath, "etc", "_builds", "DevelopmentStudio", "bin", "DevelopmentStudio.exe");
         }
 
-        public static string GetClientURL(string protocol, string host, int port)
+    public static string GetLocalIPAddress()
+    {
+      var host = Dns.GetHostEntry(Dns.GetHostName());
+      foreach (var ip in host.AddressList)
+      {
+        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
         {
-            return $"{protocol}://{host}:{port}/Client";
+          return ip.ToString();
         }
+      }
+      throw new Exception("No network adapters with an IPv4 address in the system!");
+    }
+
+    public static string GetClientURL(string protocol, string host, int port)
+    {
+      var real_host = host;
+      if (real_host == "{{ host_ip }}")
+      {
+        real_host = GetLocalIPAddress();
+
+      }
+
+      return $"{protocol}://{real_host}:{port}/Client";
+    }
+    public static string GetClientURL(string protocol, string host, string port)
+    {
+      var real_host = host;
+      if (real_host == "{{ host_ip }}")
+      {
+        real_host = GetLocalIPAddress();
+
+      }
+
+      return $"{protocol}://{real_host}:{port}/Client";
+    }
+
 
         public static string GetDBNameFromConnectionString(string engine, string connectionString)
         {
@@ -122,7 +154,26 @@ namespace RXInstanceManager
             return null;
         }
 
-        public static bool CheckInstance(string url)
+    public static string GetServerFromConnectionString(string engine, string connectionString)
+    {
+      if (engine == "mssql")
+      {
+        var databaseNameParam = connectionString.Split(';').FirstOrDefault(x => x.Contains("data source"));
+        if (databaseNameParam != null)
+          return databaseNameParam.Split('=')[1];
+      }
+
+      if (engine == "postgres")
+      {
+        var databaseNameParam = connectionString.Split(';').FirstOrDefault(x => x.Contains("server"));
+        if (databaseNameParam != null)
+          return databaseNameParam.Split('=')[1];
+      }
+
+      return null;
+    }
+
+    public static bool CheckInstance(string url)
         {
             try
             {

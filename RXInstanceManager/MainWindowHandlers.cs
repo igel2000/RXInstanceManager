@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -87,7 +87,7 @@ namespace RXInstanceManager
             ButtonDDSStart.Visibility = Visibility.Collapsed;
             ButtonRXStart.Visibility = Visibility.Collapsed;
 
-            RestartContext.Visibility = Visibility.Collapsed;
+            ChangeProject.Visibility = Visibility.Collapsed;
             ConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
             CmdContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
             CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
@@ -102,7 +102,7 @@ namespace RXInstanceManager
                     ButtonRXStart.Visibility = Visibility.Collapsed;
                     ButtonStop.Visibility = Visibility.Collapsed;
                     ButtonStart.Visibility = Visibility.Visible;
-                    RestartContext.Visibility = Visibility.Collapsed;
+                    ChangeProject.Visibility = Visibility.Visible;
                     break;
                 case Constants.InstanceStatus.Working:
                     ButtonInstall.Visibility = Visibility.Collapsed;
@@ -111,13 +111,13 @@ namespace RXInstanceManager
                     ButtonRXStart.Visibility = Visibility.Visible;
                     ButtonStop.Visibility = Visibility.Visible;
                     ButtonStart.Visibility = Visibility.Collapsed;
-                    RestartContext.Visibility = Visibility.Collapsed;
+                    ChangeProject.Visibility = Visibility.Visible;
                     break;
                 case Constants.InstanceStatus.Stopped:
                     //ButtonCopy.Visibility = Visibility.Visible;
                     ButtonDelete.Visibility = Visibility.Visible;
                     ButtonStart.Visibility = Visibility.Visible;
-                    RestartContext.Visibility = Visibility.Visible;
+                    ChangeProject.Visibility = Visibility.Visible;
                     break;
             }
         }

@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Text;
 using SQLQueryGen;
+using System.IO;
 
 namespace RXInstanceManager
 {
@@ -22,6 +23,9 @@ namespace RXInstanceManager
         [Field("name", Size = 100)]
         public string Name { get; set; }
 
+        [Field("projectconfigpath", Size = 250)]
+        public string ProjectConfigPath { get; set; }
+
         [Field("port")]
         public int Port { get; set; }
 
@@ -31,7 +35,13 @@ namespace RXInstanceManager
         [Field("dbname", Size = 100)]
         public string DBName { get; set; }
 
-        [Field("service", Size = 50)]
+        [Field("dbengine", Size = 20)]
+        public string DBEngine { get; set; }
+
+        [Field("serverdb", Size = 250)]
+        public string ServerDB { get; set; }
+
+    [Field("service", Size = 50)]
         public string ServiceName { get; set; }
 
         [Field("instance", Size = 100)]
@@ -50,20 +60,32 @@ namespace RXInstanceManager
         [Navigate(TableName = "config", FieldName = "id", Required = false)]
         public Config Config { get; set; }
 
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine("Код:                " + Code ?? string.Empty);
-            builder.AppendLine("Назначениие:        " + Name ?? string.Empty);
-            builder.AppendLine("URL:                " + URL ?? string.Empty);
-            builder.AppendLine("Версия платформы:   " + PlatformVersion ?? string.Empty);
-            builder.AppendLine("Версия решения:     " + SolutionVersion ?? string.Empty);
-            builder.AppendLine("Путь до инстанса:   " + InstancePath ?? string.Empty);
-            builder.AppendLine("Путь до хранилища:  " + StoragePath ?? string.Empty);
-            builder.AppendLine("Путь до исходников: " + SourcesPath ?? string.Empty);
-            builder.AppendLine("Имя службы:         " + ServiceName ?? string.Empty);
-            builder.AppendLine("Имя БД:             " + DBName ?? string.Empty);
-            return builder.ToString();
+    public override string ToString()
+    {
+      var builder = new StringBuilder();
+      builder.AppendLine("Код:                " + Code ?? string.Empty);
+      builder.AppendLine("URL:                " + URL ?? string.Empty);
+      builder.AppendLine("Версия платформы:   " + PlatformVersion ?? string.Empty);
+      builder.AppendLine("Версия решения:     " + SolutionVersion ?? string.Empty);
+      builder.AppendLine("Путь до инстанса:   " + InstancePath ?? string.Empty);
+      builder.AppendLine("Имя службы:         " + ServiceName ?? string.Empty);
+      builder.AppendLine("SQL-движок:         " + DBEngine ?? string.Empty);
+      builder.AppendLine("Сервер БД:          " + ServerDB ?? string.Empty);
+      builder.AppendLine("");
+      builder.AppendLine("");
+      builder.AppendLine("Конфиг проекта: " + ProjectConfigPath ?? string.Empty);
+      builder.AppendLine("");
+
+      if (File.Exists(ProjectConfigPath))
+      { 
+      var readText = File.ReadAllLines(ProjectConfigPath);
+      foreach (var s in readText)
+      {
+        //Console.WriteLine(s);
+        builder.AppendLine(s);
+      }
+    }
+      return builder.ToString();
         }
     }
 }
