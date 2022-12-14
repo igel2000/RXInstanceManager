@@ -96,17 +96,22 @@ namespace RXInstanceManager
             switch (status)
             {
                 case Constants.InstanceStatus.NeedInstall:
-                    //ButtonCopy.Visibility = Visibility.Visible;
-                    ButtonInstall.Visibility = Visibility.Visible;
+                    ButtonInstall.Visibility = Visibility.Collapsed;
                     ButtonDelete.Visibility = Visibility.Visible;
+                    ButtonDDSStart.Visibility = Visibility.Visible;
+                    ButtonRXStart.Visibility = Visibility.Collapsed;
+                    ButtonStop.Visibility = Visibility.Collapsed;
+                    ButtonStart.Visibility = Visibility.Visible;
+                    RestartContext.Visibility = Visibility.Collapsed;
                     break;
                 case Constants.InstanceStatus.Working:
-                    //ButtonCopy.Visibility = Visibility.Visible;
-                    ButtonDelete.Visibility = Visibility.Visible;
+                    ButtonInstall.Visibility = Visibility.Collapsed;
+                    ButtonDelete.Visibility = Visibility.Collapsed;
                     ButtonDDSStart.Visibility = Visibility.Visible;
                     ButtonRXStart.Visibility = Visibility.Visible;
                     ButtonStop.Visibility = Visibility.Visible;
-                    RestartContext.Visibility = Visibility.Visible;
+                    ButtonStart.Visibility = Visibility.Collapsed;
+                    RestartContext.Visibility = Visibility.Collapsed;
                     break;
                 case Constants.InstanceStatus.Stopped:
                     //ButtonCopy.Visibility = Visibility.Visible;

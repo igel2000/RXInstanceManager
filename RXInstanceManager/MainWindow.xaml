@@ -40,8 +40,8 @@
                 <Button x:Name="ButtonInstall" Content="Установить" Style="{DynamicResource RecordActionButton}" Background="MediumSlateBlue" Click="ButtonInstall_Click" />
                 <Button x:Name="ButtonDelete" Content="Удалить" Style="{DynamicResource RecordActionButton}" Background="OrangeRed" Click="ButtonDelete_Click" />
                 <Button x:Name="ButtonCopy" Content="Копировать" Style="{DynamicResource RecordActionButton}" Background="ForestGreen" Click="ButtonCopy_Click" />
-                <Button x:Name="ButtonStart" Content="Запустить" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStart_Click" />
-                <Button x:Name="ButtonStop" Content="Остановить" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
+                <Button x:Name="ButtonStart" Content="do all up" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStart_Click" />
+                <Button x:Name="ButtonStop" Content="do all down" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
                 <Button x:Name="ButtonDDSStart" Content="Запустить DDS" Style="{DynamicResource RecordActionButton}" Background="GreenYellow" Click="ButtonDDSStart_Click" />
                 <Button x:Name="ButtonRXStart" Content="Запустить RX" Style="{DynamicResource RecordActionButton}" Background="Violet" Click="ButtonRXStart_Click" />
             </StackPanel>

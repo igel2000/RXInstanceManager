@@ -59,7 +59,12 @@ namespace RXInstanceManager
             return Path.Combine(instancePath, "DirectumLauncher.exe");
         }
 
-        public static string GetConfigYamlPath(string instancePath)
+    public static string GetDoPath(string instancePath)
+    {
+      return Path.Combine(instancePath, "do.bat");
+    }
+
+    public static string GetConfigYamlPath(string instancePath)
         {
             return Path.Combine(instancePath, "etc", "config.yml");
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -43,267 +43,260 @@ namespace RXInstanceManager
             }
         }
 
-        #region ActionHandlers
+    #region ActionHandlers
 
-        private void ButtonStart_Click(object sender, RoutedEventArgs e)
+    private void ButtonStart_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
+        return;
+
+      try
+      {
+        var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all up", true, true);
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ButtonStop_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
+        return;
+
+      try
+      {
+        var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all down", true, true);
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ButtonAdd_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      var instancePath = Dialogs.ShowEnterValueDialog("Укажите путь до инстанса");
+      if (instancePath == null)
+        return;
+
+      var isValid = ValidateBeforeAddInstance(instancePath);
+      if (!isValid)
+        return;
+
+      Instance instance;
+      try
+      {
+        var config = AppHandlers.GetInstanceConfig(instancePath);
+        var yamlValues = YamlSimple.Parser.Parse(config.Body);
+
+        var instanceCode = yamlValues.GetConfigStringValue("variables.instance_name");
+        if (string.IsNullOrEmpty(instanceCode))
         {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+          instanceCode = Dialogs.ShowEnterValueDialog("Укажите код системы");
+          if (string.IsNullOrEmpty(instanceCode))
+            return;
 
-            try
-            {
-                var serviceName = _instance.ServiceName;
-                using (var regKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName, false))
-                {
-                    if (regKey != null && (int)regKey.GetValue("Start") != 3)
-                        AppHandlers.ExecuteCmdCommands(true, false,
-                            @"REG ADD HKLM\SYSTEM\CurrentControlSet\Services\" + serviceName + " /v Start /t REG_DWORD /d 3 /f",
-                            @"sc start " + serviceName);
-                    else
-                        AppHandlers.ExecuteCmdCommands(true, false, @"sc start " + serviceName);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
+          if (!AppHelper.ValidateInputCode(instanceCode))
+          {
+            MessageBox.Show("Код должен быть более от 4 до 10 символов английского алфавита в нижнем регистре и цифр");
+            return;
+          }
         }
 
-        private void ButtonStop_Click(object sender, RoutedEventArgs e)
+        instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
+        if (instance != null)
         {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            try
-            {
-                var serviceName = _instance.ServiceName;
-                using (var regKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName, false))
-                {
-                    if (regKey != null && (int)regKey.GetValue("Start") != 3)
-                        AppHandlers.ExecuteCmdCommands(true, false,
-                            @"REG ADD HKLM\SYSTEM\CurrentControlSet\Services\" + serviceName + " /v Start /t REG_DWORD /d 3 /f",
-                            @"sc stop " + serviceName);
-                    else
-                        AppHandlers.ExecuteCmdCommands(true, false, @"sc stop " + serviceName);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
+          MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
+          LoadInstances(instance);
+          return;
         }
 
-        private void ButtonAdd_Click(object sender, RoutedEventArgs e)
+        AppHandlers.SetConfigStringValue(config, "variables.instance_name", instanceCode);
+
+        instance = new Instance();
+        instance.Code = instanceCode;
+        instance.InstancePath = instancePath;
+        instance.ServiceName = $"{Constants.Service}_{instanceCode}";
+        instance.Status = Constants.InstanceStatus.NeedInstall;
+        instance.Config = config;
+        AppHandlers.UpdateInstanceData(instance);
+
+        if (config.Instance == null)
         {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            var instancePath = Dialogs.ShowEnterValueDialog("Укажите путь до инстанса");
-            if (instancePath == null)
-                return;
-
-            var isValid = ValidateBeforeAddInstance(instancePath);
-            if (!isValid)
-                return;
-
-            Instance instance;
-            try
-            {
-                var config = AppHandlers.GetInstanceConfig(instancePath);
-                var yamlValues = YamlSimple.Parser.Parse(config.Body);
-
-                var instanceCode = yamlValues.GetConfigStringValue("variables.instance_name");
-                if (string.IsNullOrEmpty(instanceCode))
-                {
-                    instanceCode = Dialogs.ShowEnterValueDialog("Укажите код системы");
-                    if (string.IsNullOrEmpty(instanceCode))
-                        return;
-
-                    if (!AppHelper.ValidateInputCode(instanceCode))
-                    {
-                        MessageBox.Show("Код должен быть более от 4 до 10 символов английского алфавита в нижнем регистре и цифр");
-                        return;
-                    }
-                }
-
-                instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
-                if (instance != null)
-                {
-                    MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
-                    LoadInstances(instance);
-                    return;
-                }
-
-                AppHandlers.SetConfigStringValue(config, "variables.instance_name", instanceCode);
-
-                instance = new Instance();
-                instance.Code = instanceCode;
-                instance.InstancePath = instancePath;
-                instance.ServiceName = $"{Constants.Service}_{instanceCode}";
-                instance.Status = Constants.InstanceStatus.NeedInstall;
-                instance.Config = config;
-                AppHandlers.UpdateInstanceData(instance);
-
-                if (config.Instance == null)
-                {
-                    config.Instance = instance;
-                    config.Save();
-                }
-
-                _instance = instance;
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(null, ex);
-            }
-
-            LoadInstances(_instance);
+          config.Instance = instance;
+          config.Save();
         }
 
-        private void ButtonInstall_Click(object sender, RoutedEventArgs e)
+        _instance = instance;
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(null, ex);
+      }
+
+      LoadInstances(_instance);
+    }
+
+    private void ButtonInstall_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
+        return;
+
+      var config = AppHandlers.GetInstanceConfig(_instance.InstancePath);
+      var yamlValues = YamlSimple.Parser.Parse(config.Body);
+
+      var isValid = ValidateBeforeInstallInstance(yamlValues);
+      if (!isValid)
+        return;
+
+      try
+      {
+        var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
+          AppHandlers.LaunchProcess(AppHelper.GetDirectumLauncherPath(_instance.InstancePath));
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ButtonCopy_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      try
+      {
+
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ButtonDelete_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      try
+      {
+        var acceptResult = MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
+                                           "Подтверждение удаления", MessageBoxButton.YesNo);
+
+        if (acceptResult != MessageBoxResult.Yes)
+          return;
+
+        //if (Instances.Get().Count() == 1)
+        //{
+        //    acceptResult = MessageBox.Show("Вы удаляете последний экземпляр системы. Продолжить?",
+        //                                   "Подтверждение удаления", MessageBoxButton.YesNo);
+        //
+        //    if (acceptResult != MessageBoxResult.Yes)
+        //        return;
+        //}
+
+        //var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+        //if (serviceStatus != Constants.InstanceStatus.NeedInstall)
+        //AppHandlers.ExecuteDoCommands(_instance.InstancePath, "do all down");
+
+        //var removeFolderCommands = new List<string>();
+        //if (!string.IsNullOrEmpty(_instance.StoragePath) && Directory.Exists(_instance.StoragePath))
+        //    removeFolderCommands.Add("rmdir /s /q \"" + _instance.StoragePath + "\"");
+        //if (!string.IsNullOrEmpty(_instance.SourcesPath) && Directory.Exists(_instance.SourcesPath))
+        //    removeFolderCommands.Add("rmdir /s /q \"" + _instance.SourcesPath + "\"");
+        //if (!string.IsNullOrEmpty(_instance.InstancePath) && Directory.Exists(_instance.InstancePath))
+        //    removeFolderCommands.Add("rmdir /s /q \"" + _instance.InstancePath + "\"");
+        //if (Directory.Exists(@"C:\inetpub\DirectumRX Web Site_" + _instance.Code))
+        //    removeFolderCommands.Add("rmdir /s /q \"C:\\inetpub\\DirectumRX Web Site_" + _instance.Code + "\"");
+
+        //if (removeFolderCommands.Any())
+        //    AppHandlers.ExecuteCmdCommands(true, false, removeFolderCommands.ToArray());
+
+        if (_instance.Config != null)
+          Configs.Delete(_instance.Config);
+
+        Instances.Delete(_instance);
+
+        LoadInstances();
+        ActionButtonVisibleChanging();
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
+
+    private void ButtonDDSStart_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      try
+      {
+        if (string.IsNullOrEmpty(_instance.StoragePath))
         {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
-                return;
-
-            var config = AppHandlers.GetInstanceConfig(_instance.InstancePath);
-            var yamlValues = YamlSimple.Parser.Parse(config.Body);
-
-            var isValid = ValidateBeforeInstallInstance(yamlValues);
-            if (!isValid)
-                return;
-
-            try
-            {
-                var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-                if (serviceStatus == Constants.InstanceStatus.NeedInstall)
-                    AppHandlers.LaunchProcess(AppHelper.GetDirectumLauncherPath(_instance.InstancePath));
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
+          MessageBox.Show("Не указана папка исходников");
+          return;
         }
 
-        private void ButtonCopy_Click(object sender, RoutedEventArgs e)
-        {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+        AppHandlers.LaunchProcess(AppHelper.GetDDSPath(_instance.InstancePath), true);
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
 
-            try
-            {
+    private void ButtonRXStart_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
-        }
+      try
+      {
+        if (!string.IsNullOrEmpty(_instance.URL))
+          AppHandlers.LaunchProcess(_instance.URL);
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
 
-        private void ButtonDelete_Click(object sender, RoutedEventArgs e)
-        {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+    private void ButtonInstruction_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-            try
-            {
-                var acceptResult = MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
-                                                   "Подтверждение удаления", MessageBoxButton.YesNo);
+      try
+      {
+        if (File.Exists("readme.txt"))
+          Dialogs.ShowFileContentDialog("readme.txt");
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+    }
 
-                if (acceptResult != MessageBoxResult.Yes)
-                    return;
+    #endregion
 
-                if (Instances.Get().Count() == 1)
-                {
-                    acceptResult = MessageBox.Show("Вы удаляете последний экземпляр системы. Продолжить?",
-                                                   "Подтверждение удаления", MessageBoxButton.YesNo);
 
-                    if (acceptResult != MessageBoxResult.Yes)
-                        return;
-                }
+    #region ContextHandlers
 
-                var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-                if (serviceStatus != Constants.InstanceStatus.NeedInstall)
-                    AppHandlers.ExecuteDoCommands(_instance.InstancePath, "do all down");
-
-                var removeFolderCommands = new List<string>();
-                if (!string.IsNullOrEmpty(_instance.StoragePath) && Directory.Exists(_instance.StoragePath))
-                    removeFolderCommands.Add("rmdir /s /q \"" + _instance.StoragePath + "\"");
-                if (!string.IsNullOrEmpty(_instance.SourcesPath) && Directory.Exists(_instance.SourcesPath))
-                    removeFolderCommands.Add("rmdir /s /q \"" + _instance.SourcesPath + "\"");
-                if (!string.IsNullOrEmpty(_instance.InstancePath) && Directory.Exists(_instance.InstancePath))
-                    removeFolderCommands.Add("rmdir /s /q \"" + _instance.InstancePath + "\"");
-                if (Directory.Exists(@"C:\inetpub\DirectumRX Web Site_" + _instance.Code))
-                    removeFolderCommands.Add("rmdir /s /q \"C:\\inetpub\\DirectumRX Web Site_" + _instance.Code + "\"");
-
-                if (removeFolderCommands.Any())
-                    AppHandlers.ExecuteCmdCommands(true, false, removeFolderCommands.ToArray());
-
-                if (_instance.Config != null)
-                    Configs.Delete(_instance.Config);
-
-                Instances.Delete(_instance);
-
-                LoadInstances();
-                ActionButtonVisibleChanging();
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
-        }
-
-        private void ButtonDDSStart_Click(object sender, RoutedEventArgs e)
-        {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            try
-            {
-                if (string.IsNullOrEmpty(_instance.StoragePath))
-                {
-                    MessageBox.Show("Не указана папка исходников");
-                    return;
-                }
-
-                AppHandlers.LaunchProcess(AppHelper.GetDDSPath(_instance.InstancePath), true);
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
-        }
-
-        private void ButtonRXStart_Click(object sender, RoutedEventArgs e)
-        {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            try
-            {
-                if (!string.IsNullOrEmpty(_instance.URL))
-                    AppHandlers.LaunchProcess(_instance.URL);
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
-        }
-
-        private void ButtonInstruction_Click(object sender, RoutedEventArgs e)
-        {
-            AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-            try
-            {
-                if (File.Exists("readme.txt"))
-                    Dialogs.ShowFileContentDialog("readme.txt");
-            }
-            catch (Exception ex)
-            {
-                AppHandlers.ErrorHandler(_instance, ex);
-            }
-        }
-
-        #endregion
-
-        #region ContextHandlers
-
-        private void ConfigContext_Click(object sender, RoutedEventArgs e)
+    private void ConfigContext_Click(object sender, RoutedEventArgs e)
         {
             AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
