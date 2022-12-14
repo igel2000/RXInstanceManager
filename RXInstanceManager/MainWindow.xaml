@@ -60,6 +60,7 @@
                     <ContextMenu x:Name="InstancesContextMenu">
                         <MenuItem x:Name="ChangeProject" Header="Сменить проект" Click="ChangeProject_Click" />
                         <MenuItem x:Name="UpdateConfig" Header="Пропатчить config.yml" Click="UpdateConfig_Click" />
+                        <MenuItem x:Name="CreateProject" Header="Создать проект" Click="CreateProject_Click" />
                         <MenuItem x:Name="InfoContext" Header="Сводка по инстансу" Click="InfoContext_Click" />
                         <MenuItem x:Name="CmdAdminContext" Header="Запустить cmd (от администратора)" Click="CmdAdminContext_Click" />
                         <MenuItem x:Name="CmdContext" Header="Запустить cmd" Click="CmdContext_Click" />
