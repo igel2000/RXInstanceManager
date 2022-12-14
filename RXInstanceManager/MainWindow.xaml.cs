@@ -352,7 +352,7 @@ namespace RXInstanceManager
 
           try
           {
-              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map set {0} -rundds=False -pause", config_filename), true, true);
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map set {0} -rundds=False -need_pause", config_filename), true, true);
           }
           catch (Exception ex)
           {
@@ -379,7 +379,7 @@ namespace RXInstanceManager
           var config_filename = openFileDialog.FileName;
           try
           {
-              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map update_config {0} -rundds=False -pause", config_filename), true, true);
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map update_config {0} -rundds=False -need_pause", config_filename), true, true);
           }
           catch (Exception ex)
           {
@@ -452,7 +452,7 @@ namespace RXInstanceManager
 
       try
       {
-         AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "map current -pause", true, true);
+         AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "map current -need_pause", true, true);
       }
       catch (Exception ex)
       {
