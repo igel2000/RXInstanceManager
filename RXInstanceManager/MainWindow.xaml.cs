@@ -9,16 +9,73 @@ using System.Reflection;
 using Microsoft.Win32;
 using System.Windows.Forms;
 
+
+
 namespace RXInstanceManager
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+
+  /// <summary>
+  /// Логика взаимодействия для MainWindow.xaml
+  /// </summary>
+  public partial class MainWindow : Window
     {
         internal static Instance _instance;
 
-        public MainWindow()
+    #region WPFToTray
+    // https://possemeeg.wordpress.com/2007/09/06/minimize-to-tray-icon-in-wpf/
+    private System.Windows.Forms.NotifyIcon m_notifyIcon;
+
+    public void Window1()
+    {     // initialise code here
+      //m_notifyIcon = new System.Windows.Forms.NotifyIcon();
+      //m_notifyIcon.BalloonTipText = "The app has been minimised. Click the tray icon to show.";
+      //m_notifyIcon.BalloonTipTitle = "The App";
+      //m_notifyIcon.Text = "The App";
+      //m_notifyIcon.Icon = new System.Drawing.Icon("TheAppIcon.ico");
+      //m_notifyIcon.Click += new EventHandler(m_notifyIcon_Click);
+    }
+
+    void OnClose(object sender, System.ComponentModel.CancelEventArgs args)
+    {
+      m_notifyIcon.Dispose();
+      m_notifyIcon = null;
+    }
+
+    private WindowState m_storedWindowState = WindowState.Normal;
+    void OnStateChanged(object sender, EventArgs args)
+    {
+      if (WindowState == WindowState.Minimized)
+      {
+        Hide();
+        if (m_notifyIcon != null)
+          m_notifyIcon.ShowBalloonTip(2000);
+      }
+      else
+        m_storedWindowState = WindowState;
+    }
+    void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs args)
+    {
+      CheckTrayIcon();
+    }
+
+    void m_notifyIcon_Click(object sender, EventArgs e)
+    {
+      Show();
+      WindowState = m_storedWindowState;
+    }
+    void CheckTrayIcon()
+    {
+      ShowTrayIcon(!IsVisible);
+    }
+
+    void ShowTrayIcon(bool show)
+    {
+      if (m_notifyIcon != null)
+        m_notifyIcon.Visible = show;
+    }
+    #endregion
+
+    public MainWindow()
         {
             InitializeComponent();
 
@@ -32,7 +89,14 @@ namespace RXInstanceManager
             ActionButtonVisibleChanging();
             LoadInstances();
             StartAsyncHandlers();
-        }
+
+      m_notifyIcon = new System.Windows.Forms.NotifyIcon();
+      m_notifyIcon.BalloonTipText = "The app has been minimised. Click the tray icon to show.";
+      m_notifyIcon.BalloonTipTitle = "The App";
+      m_notifyIcon.Text = "The App";
+      m_notifyIcon.Icon = new System.Drawing.Icon("App.ico");
+      m_notifyIcon.Click += new EventHandler(m_notifyIcon_Click);
+    }
 
         private void GridInstances_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RXInstanceManager"
         mc:Ignorable="d"
-        Title="Менеджер экземпляров RX" Height="400" Width="1400" MinHeight="300" MinWidth="1000" WindowStartupLocation="CenterScreen">
+        Title="Менеджер экземпляров RX" Height="400" Width="1400" MinHeight="300" MinWidth="1000" WindowStartupLocation="CenterScreen" Closing="OnClose" StateChanged="OnStateChanged" IsVisibleChanged="OnIsVisibleChanged">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
