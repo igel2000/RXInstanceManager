@@ -89,7 +89,7 @@ namespace RXInstanceManager
 
             ChangeProject.Visibility = Visibility.Collapsed;
             ConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-            CmdContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+            ClearLogContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
             CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
             InfoContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
 

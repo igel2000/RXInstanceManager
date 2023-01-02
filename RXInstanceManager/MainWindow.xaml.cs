@@ -480,7 +480,7 @@ namespace RXInstanceManager
       }
     }
 
-    private void CmdContext_Click(object sender, RoutedEventArgs e)
+    private void ClearLogContext_Click(object sender, RoutedEventArgs e)
         {
             AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
@@ -488,8 +488,8 @@ namespace RXInstanceManager
                 return;
             try
             {
-                AppHandlers.ExecuteCmdCommand($"cd {_instance.InstancePath}", false);
-            }
+        AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map clear_log"), true, true);
+      }
             catch (Exception ex)
             {
                 AppHandlers.ErrorHandler(_instance, ex);
