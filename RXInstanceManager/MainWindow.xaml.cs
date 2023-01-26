@@ -452,6 +452,36 @@ namespace RXInstanceManager
         }
       }
     }
+
+    private void RunDDSWithOutDeploy_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+      {
+        var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
+        openFileDialog.InitialDirectory = string.IsNullOrEmpty(_instance.ProjectConfigPath) ? "C:\\" : Path.GetDirectoryName(_instance.ProjectConfigPath);
+        openFileDialog.Filter = filter;
+        openFileDialog.FilterIndex = 1;
+        openFileDialog.RestoreDirectory = true;
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+          var config_filename = openFileDialog.FileName;
+          try
+          {
+            AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map dds_wo_deploy {0} -need_pause", config_filename), true, false);
+          }
+          catch (Exception ex)
+          {
+            AppHandlers.ErrorHandler(_instance, ex);
+          }
+
+        }
+      }
+    }
+
+    
+
     private void UpdateConfig_Click(object sender, RoutedEventArgs e)
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
