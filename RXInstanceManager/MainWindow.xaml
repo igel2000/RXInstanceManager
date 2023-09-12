@@ -6,70 +6,68 @@
         xmlns:local="clr-namespace:RXInstanceManager"
         mc:Ignorable="d"
         Title="Менеджер экземпляров RX" Height="400" Width="1400" MinHeight="300" MinWidth="1000" WindowStartupLocation="CenterScreen" Closing="OnClose" StateChanged="OnStateChanged" IsVisibleChanged="OnIsVisibleChanged">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="UIResources.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="40" />
-            <ColumnDefinition />
-            <ColumnDefinition Width="40" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="40" />
-            <RowDefinition />
-            <RowDefinition Height="30" />
-        </Grid.RowDefinitions>
-        <Button x:Name="HiddenButton" Grid.Column="0" Grid.Row="0" Width="150" Background="#222b34" Click="HiddenButton_Click" />
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
-        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Background="#2C353C" />
-        <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="#5b5f6a" />
-        <Grid Grid.Row="1" Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal" Height="40" Grid.Row="0">
-                <Button x:Name="ButtonInstruction" Content="Инструкция" Style="{DynamicResource RecordActionButton}" Background="DimGray" Click="ButtonInstruction_Click" />
+  <Window.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="UIResources.xaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Window.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="40" />
+      <ColumnDefinition />
+      <ColumnDefinition Width="40" />
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="40" />
+      <RowDefinition />
+      <RowDefinition Height="30" />
+    </Grid.RowDefinitions>
+    <Button x:Name="HiddenButton" Grid.Column="0" Grid.Row="0" Width="150" Background="#222b34" Click="HiddenButton_Click" />
+    <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
+    <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Style="{DynamicResource HeaderStackPanel}"/>
+    <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Background="#2C353C" />
+    <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="#5b5f6a" />
+    <Grid Grid.Row="1" Grid.Column="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="50"/>
+        <RowDefinition />
+      </Grid.RowDefinitions>
+      <StackPanel Orientation="Horizontal" Height="40" Grid.Row="0">
+        <Button x:Name="ButtonInstruction" Content="Инструкция" Style="{DynamicResource RecordActionButton}" Background="DimGray" Click="ButtonInstruction_Click" />
         <Button x:Name="ButtonAdd" Content="Добавить" Style="{DynamicResource RecordActionButton}" Margin="10,5,5,5" Background="SkyBlue" Click="ButtonAdd_Click" />
-        <Button x:Name="ButtonInstall" Content="Установить" Style="{DynamicResource RecordActionButton}" Background="MediumSlateBlue" Click="ButtonInstall_Click" />
-                <Button x:Name="ButtonDelete" Content="Удалить" Style="{DynamicResource RecordActionButton}" Background="OrangeRed" Click="ButtonDelete_Click" />
-                <Button x:Name="ButtonCopy" Content="Копировать" Style="{DynamicResource RecordActionButton}" Background="ForestGreen" Click="ButtonCopy_Click" />
-                <Button x:Name="ButtonStart" Content="do all up" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStart_Click" />
-                <Button x:Name="ButtonStop" Content="do all down" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
-                <Button x:Name="ButtonDDSStart" Content="Запустить DDS" Style="{DynamicResource RecordActionButton}" Background="GreenYellow" Click="ButtonDDSStart_Click" />
-                <Button x:Name="ButtonRXStart" Content="Открыть веб-клиент" Style="{DynamicResource RecordActionButton}" Background="Violet" Click="ButtonRXStart_Click" />
-            </StackPanel>
-            <DataGrid x:Name="GridInstances" AutoGenerateColumns="False" Style="{DynamicResource DataGridStyle}" Grid.Row="1" SelectionChanged="GridInstances_SelectionChanged" >
-                <DataGrid.Columns>
-                    <DataGridTextColumn Binding="{Binding Code}" Header="Код" Width="70" />
-                    <DataGridTextColumn Binding="{Binding SolutionVersion}" Header="Версия" Width="80" />
-                    <DataGridTextColumn Binding="{Binding Status}" Header="Статус" Width="80" />
-                    <DataGridTextColumn Binding="{Binding URL}" Header="URL" Width="200" />
-                    <DataGridTextColumn Binding="{Binding Name}" Header="Назначение" Width="250" />
-                    <DataGridTextColumn Binding="{Binding ProjectConfigPath}" Header="Конфиг проекта" Width="250" />
-                    <DataGridTextColumn Binding="{Binding InstancePath}" Header="Путь" Width="150" />
-                    <DataGridTextColumn Binding="{Binding DBName}" Header="Имя БД" Width="150" />
-                </DataGrid.Columns>
-                <DataGrid.ContextMenu>
-                    <ContextMenu x:Name="InstancesContextMenu">
-                        <MenuItem x:Name="ChangeProject" Header="Сменить проект" Click="ChangeProject_Click" />
-                        <MenuItem x:Name="UpdateConfig" Header="Пропатчить config.yml" Click="UpdateConfig_Click" />
-                        <MenuItem x:Name="CreateProject" Header="Создать проект" Click="CreateProject_Click" />
-                        <MenuItem x:Name="RunDDSWithOutDeploy" Header="Открыть для просмотра" Click="RunDDSWithOutDeploy_Click" />
-                        <MenuItem x:Name="InfoContext" Header="Сводка по инстансу" Click="InfoContext_Click" />
-                        <MenuItem x:Name="CmdAdminContext" Header="Запустить cmd (от администратора)" Click="CmdAdminContext_Click" />
-                        <MenuItem x:Name="ClearLogContext" Header="Очистить логи" Click="ClearLogContext_Click" />
-                        <MenuItem x:Name="ConfigContext" Header="Открыть config.yml" Click="ConfigContext_Click" />
-                        <MenuItem x:Name="ProjectConfigContext" Header="Открыть конфиг проекта" Click="ProjectConfigContext_Click" />
-                    </ContextMenu>
-                </DataGrid.ContextMenu>
-            </DataGrid>
-        </Grid>
+        <Button x:Name="ButtonDelete" Content="Убрать из списка" Style="{DynamicResource RecordActionButton}" Background="OrangeRed" Click="ButtonDelete_Click" />
+        <Button x:Name="ButtonStart" Content="do all up" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStart_Click" />
+        <Button x:Name="ButtonStop" Content="do all down" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
+        <Button x:Name="ButtonDDSStart" Content="Запустить DDS" Style="{DynamicResource RecordActionButton}" Background="GreenYellow" Click="ButtonDDSStart_Click" />
+        <Button x:Name="ButtonRXStart" Content="Открыть веб-клиент" Style="{DynamicResource RecordActionButton}" Background="Violet" Click="ButtonRXStart_Click" />
+      </StackPanel>
+      <DataGrid x:Name="GridInstances" AutoGenerateColumns="False" Style="{DynamicResource DataGridStyle}" Grid.Row="1" SelectionChanged="GridInstances_SelectionChanged" >
+        <DataGrid.Columns>
+          <DataGridTextColumn Binding="{Binding Code}" Header="Код" Width="70" />
+          <DataGridTextColumn Binding="{Binding SolutionVersion}" Header="Версия" Width="80" />
+          <DataGridTextColumn Binding="{Binding Status}" Header="Статус" Width="80" />
+          <DataGridTextColumn Binding="{Binding URL}" Header="URL" Width="200" />
+          <DataGridTextColumn Binding="{Binding Name}" Header="Назначение" Width="250" />
+          <DataGridTextColumn Binding="{Binding ProjectConfigPath}" Header="Конфиг проекта" Width="250" />
+          <DataGridTextColumn Binding="{Binding InstancePath}" Header="Путь" Width="150" />
+          <DataGridTextColumn Binding="{Binding DBName}" Header="Имя БД" Width="150" />
+        </DataGrid.Columns>
+        <DataGrid.ContextMenu>
+          <ContextMenu x:Name="InstancesContextMenu">
+            <MenuItem x:Name="ChangeProject" Header="Сменить проект" Click="ChangeProject_Click" />
+            <MenuItem x:Name="UpdateConfig" Header="Пропатчить config.yml" Click="UpdateConfig_Click" />
+            <MenuItem x:Name="CreateProject" Header="Создать проект" Click="CreateProject_Click" />
+            <MenuItem x:Name="RunDDSWithOutDeploy" Header="Открыть для просмотра" Click="RunDDSWithOutDeploy_Click" />
+            <MenuItem x:Name="InfoContext" Header="Сводка по инстансу" Click="InfoContext_Click" />
+            <MenuItem x:Name="CmdAdminContext" Header="Запустить cmd (от администратора)" Click="CmdAdminContext_Click" />
+            <MenuItem x:Name="ClearLogContext" Header="Очистить логи" Click="ClearLogContext_Click" />
+            <MenuItem x:Name="ConfigContext" Header="Открыть config.yml" Click="ConfigContext_Click" />
+            <MenuItem x:Name="ProjectConfigContext" Header="Открыть конфиг проекта" Click="ProjectConfigContext_Click" />
+          </ContextMenu>
+        </DataGrid.ContextMenu>
+      </DataGrid>
     </Grid>
+  </Grid>
 </Window>

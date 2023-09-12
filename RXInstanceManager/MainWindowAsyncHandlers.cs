@@ -18,7 +18,7 @@ namespace RXInstanceManager
         {
           var status = AppHandlers.GetServiceStatus(instance);
           if (status != instance.Status)
-            LoadInstances(_instance);
+            LoadInstances(_instance.InstancePath);
         }
       }
     }
@@ -38,7 +38,7 @@ namespace RXInstanceManager
             if (instance.ConfigChanged == null ||  changeTime.MoreThanUpToSeconds(instance.ConfigChanged))
             {
               AppHandlers.UpdateInstanceData(instance);
-              LoadInstances(_instance);
+              LoadInstances(_instance.InstancePath);
             }
           }
         }

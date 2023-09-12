@@ -20,6 +20,7 @@ namespace RXInstanceManager
   public partial class MainWindow : Window
   {
     internal static Instance _instance;
+    public static List<Instance> instances2 = new List<Instance>();
 
     #region WPFToTray
     // https://possemeeg.wordpress.com/2007/09/06/minimize-to-tray-icon-in-wpf/
@@ -70,30 +71,10 @@ namespace RXInstanceManager
       InitializeComponent();
       if (!Directory.Exists(Constants.LogPath))
         Directory.CreateDirectory(Constants.LogPath);
-
-      DBInitializer.Initialize();
       Instances.Create();
-
-      ActionButtonVisibleChanging();
-
-
-      if (File.Exists(DBInitializer.YamlFilePath))
-      {
-        List<string> instancesFolders;
-        using (var yamlReader = new StreamReader(DBInitializer.YamlFilePath))
-        {
-          var deserialize = new YamlDotNet.Serialization.DeserializerBuilder()
-                                          .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
-                                          .Build();
-          instancesFolders = deserialize.Deserialize<List<string>>(yamlReader);
-        }
-        foreach (var folder in instancesFolders)
-          AddInstance(folder);
-      }
-
       LoadInstances();
+      ActionButtonVisibleChanging();
       StartAsyncHandlers();
-
       m_notifyIcon = new System.Windows.Forms.NotifyIcon();
       m_notifyIcon.BalloonTipText = "The app has been minimised. Click the tray icon to show.";
       m_notifyIcon.BalloonTipTitle = "The App";
@@ -118,13 +99,13 @@ namespace RXInstanceManager
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
 
-      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
+      if (_instance == null)
         return;
 
       try
       {
         var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
+        if (serviceStatus == Constants.InstanceStatus.Stopped)
           AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all up", true, true);
       }
       catch (Exception ex)
@@ -152,59 +133,6 @@ namespace RXInstanceManager
       }
     }
 
-    private void AddInstance(string instancePath)
-    {
-      Instance instance;
-      try
-      {
-
-        var configYamlPath = AppHelper.GetConfigYamlPath(instancePath);
-        if (!File.Exists(configYamlPath))
-        {
-          System.Windows.MessageBox.Show(string.Format("Папка '{0}' папка не является папкой экземпляра DirectumRX (Не найден config.yml)", configYamlPath),
-                                         "", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-          return;
-        }
-
-        var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
-
-
-        var instanceCode = yamlValues.GetConfigStringValue("variables.instance_name");
-        if (string.IsNullOrEmpty(instanceCode))
-        {
-          instanceCode = Dialogs.ShowEnterValueDialog("Укажите код системы");
-          if (string.IsNullOrEmpty(instanceCode))
-            return;
-
-          if (!AppHelper.ValidateInputCode(instanceCode))
-          {
-            System.Windows.MessageBox.Show("Код должен быть более от 1до 10 символов английского алфавита в нижнем регистре и цифр");
-            return;
-          }
-        }
-
-        instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
-        if (instance != null)
-        {
-          System.Windows.MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
-          LoadInstances(instance);
-          return;
-        }
-
-        instance = new Instance();
-        instance.Code = instanceCode;
-        instance.InstancePath = instancePath;
-        instance.ServiceName = $"{Constants.Service}_{instanceCode}";
-        instance.Status = Constants.InstanceStatus.NeedInstall;
-        AppHandlers.UpdateInstanceData(instance);
-        _instance = instance;
-      }
-      catch (Exception ex)
-      {
-        AppHandlers.ErrorHandler(null, ex);
-      }
-    }
-
     private void ButtonAdd_Click(object sender, RoutedEventArgs e)
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
@@ -214,50 +142,9 @@ namespace RXInstanceManager
         DialogResult result = openFolderDialog.ShowDialog();
         if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(openFolderDialog.SelectedPath))
         {
-          AddInstance(openFolderDialog.SelectedPath);
-          Instances.UpdateInstanceYaml();
-          LoadInstances(_instance);
+          Instances.Add(openFolderDialog.SelectedPath);
+          LoadInstances(openFolderDialog.SelectedPath);
         }
-      }
-    }
-
-    private void ButtonInstall_Click(object sender, RoutedEventArgs e)
-    {
-      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-      if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
-        return;
-
-      var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
-      var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
-
-      var isValid = ValidateBeforeInstallInstance(yamlValues);
-      if (!isValid)
-        return;
-
-      try
-      {
-        var serviceStatus = AppHandlers.GetServiceStatus(_instance);
-        if (serviceStatus == Constants.InstanceStatus.NeedInstall)
-          AppHandlers.LaunchProcess(AppHelper.GetDirectumLauncherPath(_instance.InstancePath));
-      }
-      catch (Exception ex)
-      {
-        AppHandlers.ErrorHandler(_instance, ex);
-      }
-    }
-
-    private void ButtonCopy_Click(object sender, RoutedEventArgs e)
-    {
-      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-      try
-      {
-
-      }
-      catch (Exception ex)
-      {
-        AppHandlers.ErrorHandler(_instance, ex);
       }
     }
 
@@ -269,13 +156,11 @@ namespace RXInstanceManager
       {
         var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
                                            "Подтверждение удаления", MessageBoxButton.YesNo);
-
         if (acceptResult != MessageBoxResult.Yes)
           return;
-
         Instances.Delete(_instance);
-
         LoadInstances();
+        _instance = GridInstances.SelectedItem as Instance;
         ActionButtonVisibleChanging();
       }
       catch (Exception ex)
@@ -295,7 +180,6 @@ namespace RXInstanceManager
           System.Windows.MessageBox.Show("Не указана папка исходников");
           return;
         }
-
         AppHandlers.LaunchProcess(AppHelper.GetDDSPath(_instance.InstancePath), true);
       }
       catch (Exception ex)

@@ -36,74 +36,48 @@ namespace RXInstanceManager
     #endregion
 
     #region Работа с конфигом.
-    /*
-    public static Config GetInstanceConfig(string instancePath)
-    {
-      if (string.IsNullOrEmpty(instancePath) || !Directory.Exists(instancePath))
-        return null;
-
-      var configYamlPath = AppHelper.GetConfigYamlPath(instancePath);
-      if (!File.Exists(configYamlPath))
-      {
-        var configExamplePath = AppHelper.GetConfigYamlExamplePath(instancePath);
-        if (!File.Exists(configExamplePath))
-          return null;
-
-        var example = File.ReadAllText(configExamplePath);
-        example = example.Replace("variables:", "variables:\n    instance_name: ''\n    purpose: ''");
-        File.WriteAllText(configYamlPath, example);
-      }
-
-      Config config = new Config();
-      config.Path = configYamlPath;
-      //config.Body = File.ReadAllText(configYamlPath);
-      //config.Changed = AppHelper.GetFileChangeTime(configYamlPath);
-
-      return config;
-    }
-    */
 
     public static void UpdateInstanceData(Instance instance)
     {
       if (instance == null || string.IsNullOrEmpty(instance.InstancePath))
         return;
 
-      //var config = GetInstanceConfig(instance.InstancePath);
+      var idx = Instances.instances.FindIndex(i => i.Code == instance.Code);
+      var inst = Instances.instances[idx];
+
+
       var yamlValues = YamlSimple.Parser.ParseFile(AppHelper.GetConfigYamlPath(instance.InstancePath));
-      //var yamlValues = YamlSimple.Parser.Parse(config.Body);
 
       var protocol = yamlValues.GetConfigStringValue("variables.protocol");
       var host = yamlValues.GetConfigStringValue("variables.host_fqdn");
 
-      instance.DBEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
+      inst.DBEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
       var connection = yamlValues.GetConfigStringValue("common_config.CONNECTION_STRING");
-      instance.ServerDB = AppHelper.GetServerFromConnectionString(instance.DBEngine, connection);
-      var dbName = AppHelper.GetDBNameFromConnectionString(instance.DBEngine, connection);
+      inst.ServerDB = AppHelper.GetServerFromConnectionString(inst.DBEngine, connection);
+      var dbName = AppHelper.GetDBNameFromConnectionString(inst.DBEngine, connection);
       if (dbName == "{{ database }}")
         dbName = yamlValues.GetConfigStringValue("variables.database");
-      instance.DBName = dbName ?? string.Empty;
+      inst.DBName = dbName ?? string.Empty;
 
-      instance.Name = yamlValues.GetConfigStringValue("variables.purpose");
-      instance.ProjectConfigPath = yamlValues.GetConfigStringValue("variables.project_config_path");
-      instance.Port = yamlValues.GetConfigIntValue("variables.http_port") ?? 0;
-      instance.URL = AppHelper.GetClientURL(protocol, host, instance.Port);
-      instance.StoragePath = yamlValues.GetConfigStringValue("variables.home_path");
-      if (instance.StoragePath == "{{ home_path_src }}")
-        instance.StoragePath = yamlValues.GetConfigStringValue("variables.home_path_src");
-      instance.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
-      instance.PlatformVersion = GetInstancePlatformVersion(instance.InstancePath);
-      instance.SolutionVersion = GetInstanceSolutionVersion(instance.InstancePath);
+      inst.Name = yamlValues.GetConfigStringValue("variables.purpose");
+      inst.ProjectConfigPath = yamlValues.GetConfigStringValue("variables.project_config_path");
+      inst.Port = yamlValues.GetConfigIntValue("variables.http_port") ?? 0;
+      inst.URL = AppHelper.GetClientURL(protocol, host, inst.Port);
+      inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path");
+      if (inst.StoragePath == "{{ home_path_src }}")
+        inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path_src");
+      inst.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
+      inst.PlatformVersion = GetInstancePlatformVersion(inst.InstancePath);
+      inst.SolutionVersion = GetInstanceSolutionVersion(inst.InstancePath);
 
-      instance.Status = AppHandlers.GetServiceStatus(instance);
+      inst.Status = AppHandlers.GetServiceStatus(inst);
 
-      var configYamlPath = AppHelper.GetConfigYamlPath(instance.InstancePath);
+      var configYamlPath = AppHelper.GetConfigYamlPath(inst.InstancePath);
       if (File.Exists(configYamlPath))
       {
         var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
-        instance.ConfigChanged = changeTime;
+        inst.ConfigChanged = changeTime;
       }
-
-      instance.Save();
     }
 
     public static string GetConfigStringValue(this Dictionary<string, string> values, string key)
@@ -122,13 +96,6 @@ namespace RXInstanceManager
 
       return null;
     }
-
-    /*
-    public static void SetConfigStringValue(Config config, string key, string value)
-    {
-      YamlSimple.Parser.UpdateFileStringValue(config.Path, key, value);
-    }
-    */
 
     #endregion
 

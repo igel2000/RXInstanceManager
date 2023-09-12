@@ -19,63 +19,53 @@ namespace RXInstanceManager
       LoadInstancesItems();
     }
 
-    private void LoadInstances(Instance instance)
+    private void LoadInstances(string instancePath)
     {
-      if (instance == null)
+      if (string.IsNullOrEmpty(instancePath))
         LoadInstancesItems();
-
-      LoadInstancesItems(instance);
+      else
+        LoadInstancesItems(instancePath);
     }
 
     private void LoadInstancesItems()
     {
       var instances = Instances.Get();
-      foreach (var instance in instances)
+      GridInstances.ItemsSource = instances.OrderBy(x => x.Code).ThenBy(x => x.Status);
+      CollectionViewSource.GetDefaultView(GridInstances.ItemsSource).Refresh();
+      GridInstances.UpdateLayout();
+      if (GridInstances.Items.Count > 0)
       {
-        bool needSave = false;
-        var status = AppHandlers.GetServiceStatus(instance);
-        if (instance.Status != status)
-        {
-          instance.Status = status;
-          needSave = true;
-        }
-
-        var configYamlPath = AppHelper.GetConfigYamlPath(instance.InstancePath);
-        if (File.Exists(configYamlPath))
-        {
-          var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
-          if (changeTime.MoreThanUpToSeconds(instance.ConfigChanged))
-          {
-            instance.ConfigChanged = changeTime;
-            needSave = true;
-          }
-        }
-        if (needSave)
-          instance.Save();
+        var item = GridInstances.Items[0] as Instance;
+        GridInstances.SelectedItem = item;
+        GridInstances.ScrollIntoView(item);
+        GridInstances.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
       }
-      GridInstances.ItemsSource = instances.OrderBy(x => x.Id).ThenBy(x => x.Status);
+      else
+      {
+        GridInstances.SelectedItem = null;
+        GridInstances.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+      }
     }
 
-    private void LoadInstancesItems(Instance instance)
+    private void LoadInstancesItems(string instancePath)
     {
-      LoadInstancesItems();
+      var instances = Instances.Get();
+      GridInstances.ItemsSource = instances.OrderBy(x => x.Code).ThenBy(x => x.Status);
 
-      if (instance != null)
+      if (!string.IsNullOrEmpty(instancePath) && GridInstances.Items.Count > 0)
       {
         CollectionViewSource.GetDefaultView(GridInstances.ItemsSource).Refresh();
         GridInstances.UpdateLayout();
-
+        var item = GridInstances.Items[0] as Instance;
         for (int i = 0; i < GridInstances.Items.Count; i++)
         {
-          var item = GridInstances.Items[i] as Instance;
-          if (item.Id == instance.Id)
-          {
-            GridInstances.SelectedItem = item;
-            GridInstances.ScrollIntoView(item);
-            GridInstances.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+          item = GridInstances.Items[i] as Instance;
+          if (item.InstancePath == instancePath)
             break;
-          }
         }
+        GridInstances.SelectedItem = item;
+        GridInstances.ScrollIntoView(item);
+        GridInstances.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
       }
     }
 
@@ -83,19 +73,10 @@ namespace RXInstanceManager
 
     #region Работа с визуальными эффектами.
 
-    private void EditStyleChanging(TextBox textbox, string emptyValue)
-    {
-      textbox.Style = (string.IsNullOrWhiteSpace(textbox.Text) || textbox.Text == emptyValue) ?
-          this.FindResource("EditTextBoxEmpty") as Style :
-          this.FindResource("EditTextBoxEdit") as Style;
-    }
-
     private void ActionButtonVisibleChanging(string status = null)
     {
       ButtonStart.Visibility = Visibility.Collapsed;
       ButtonStop.Visibility = Visibility.Collapsed;
-      ButtonCopy.Visibility = Visibility.Collapsed;
-      ButtonInstall.Visibility = Visibility.Collapsed;
       ButtonDelete.Visibility = Visibility.Collapsed;
       ButtonDDSStart.Visibility = Visibility.Collapsed;
       ButtonRXStart.Visibility = Visibility.Collapsed;
@@ -106,10 +87,11 @@ namespace RXInstanceManager
       CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       InfoContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
 
+      status = _instance == null ? status : _instance.Status;
+
       switch (status)
       {
         case Constants.InstanceStatus.Stopped:
-          ButtonInstall.Visibility = Visibility.Collapsed;
           ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
           ButtonRXStart.Visibility = Visibility.Collapsed;
@@ -118,7 +100,6 @@ namespace RXInstanceManager
           ChangeProject.Visibility = Visibility.Visible;
           break;
         case Constants.InstanceStatus.Working:
-          ButtonInstall.Visibility = Visibility.Collapsed;
           ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
           ButtonRXStart.Visibility = Visibility.Visible;
@@ -126,13 +107,6 @@ namespace RXInstanceManager
           ButtonStart.Visibility = Visibility.Collapsed;
           ChangeProject.Visibility = Visibility.Visible;
           break;
-       /*
-        case Constants.InstanceStatus.NeedInstall:
-          ButtonDelete.Visibility = Visibility.Visible;
-          ButtonStart.Visibility = Visibility.Visible;
-          ChangeProject.Visibility = Visibility.Visible;
-          break;
-       */
       }
     }
 
@@ -152,14 +126,16 @@ namespace RXInstanceManager
       if (instances.Any(x => x.InstancePath == instancePath))
       {
         var code = instances.First(x => x.InstancePath == instancePath).Code;
-        MessageBox.Show($"Выбранная папка уже является папкой экзампляра {code}");
+        MessageBox.Show($"Выбранная папка уже является папкой экзампляра {code}",
+                        "", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         return false;
       }
 
       var instanceDLPath = System.IO.Path.Combine(instancePath, "DirectumLauncher.exe");
       if (!File.Exists(instanceDLPath))
       {
-        MessageBox.Show("Выбранная папка не является папкой экземпляра DirectumRX (Не найден DirectumLauncher)");
+        MessageBox.Show("Выбранная папка не является папкой экземпляра DirectumRX (Не найден DirectumLauncher)",
+                        "", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         return false;
       }
 
@@ -169,7 +145,8 @@ namespace RXInstanceManager
         var configExFile = AppHelper.GetConfigYamlExamplePath(instancePath);
         if (!File.Exists(configExFile))
         {
-          MessageBox.Show("Выбранная папка не является папкой экземпляра DirectumRX (Не найден config.yml или config.yml.example)");
+          MessageBox.Show("Выбранная папка не является папкой экземпляра DirectumRX (Не найден config.yml или config.yml.example)",
+                          "", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
           return false;
         }
       }

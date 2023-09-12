@@ -176,7 +176,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AppHandlers.cs" />
-    <Compile Include="DBInitializer.cs" />
     <Compile Include="Dialogs\EnterValueDialog.xaml.cs">
       <DependentUpon>EnterValueDialog.xaml</DependentUpon>
     </Compile>
@@ -271,9 +270,6 @@
     <Resource Include="App.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="SQLQueryGen.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="YamlSimpleParser.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

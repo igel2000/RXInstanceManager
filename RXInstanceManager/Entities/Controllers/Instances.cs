@@ -3,93 +3,71 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Data.SQLite;
 using Dapper;
-using SQLQueryGen;
 using System.IO;
 
 namespace RXInstanceManager
 {
   public static class Instances
   {
+    internal static readonly string YamlFilePath = $"{AppContext.BaseDirectory}rxman.yaml";
+    public static List<Instance> instances;
+    public static List<string> instancesFolders;
 
-    public static void UpdateInstanceYaml()
+    public static void UpdateYaml()
     {
-      List<string> instancesFolders = new List<string>();
-      var instances = Get();
-      foreach (var inst in instances)
-        instancesFolders.Add(inst.InstancePath);
       var serializer = new YamlDotNet.Serialization.SerializerBuilder()
           .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
           .Build();
       var yaml = serializer.Serialize(instancesFolders);
-      File.WriteAllText(DBInitializer.YamlFilePath, yaml);
+      File.WriteAllText(Instances.YamlFilePath, yaml);
     }
-    #region Save.
 
     public static void Save(this Instance instance)
     {
-      if (instance.Id > 0)
-        Update(instance);
-      else
-        Insert(instance);
-    }
-
-    private static void Insert(Instance instance)
-    {
-      using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
+      if (!Instances.instancesFolders.Where(i => i == instance.InstancePath).Any())
       {
-        instance.Id = connection.QuerySingle<int>(DBInitializer.QueryGenerator.GenerateInsertQuery<Instance>(instance));
-      }
-      //UpdateInstanceYaml();
-    }
-
-    private static void Update(Instance instance)
-    {
-      using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
-      {
-        connection.Execute(DBInitializer.QueryGenerator.GenerateUpdateQuery<Instance>(instance));
+        Instances.instancesFolders.Add(instance.InstancePath);
+        UpdateYaml();
       }
     }
 
-    #endregion
-
-    #region Get.
+    public static void Add(string instancePath)
+    {
+      if (!Instances.instancesFolders.Where(i => i == instancePath).Any())
+      {
+        Instances.instancesFolders.Add(instancePath);
+        UpdateYaml();
+      }
+    }
 
     public static List<Instance> Get()
     {
-      using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
-      {
-        return connection.Query<Instance>(
-        DBInitializer.QueryGenerator.GenerateSelectQuery<Instance>()).ToList();
-      }
+      Instances.instances = new List<Instance>();
+      foreach (var folder in Instances.instancesFolders)
+        Instances.instances.Add(new Instance(folder));
+      return Instances.instances;
     }
-
-    #endregion
-
-    #region Delete.
 
     public static void Delete(Instance instance)
     {
-      using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
-      {
-        connection.Execute(DBInitializer.QueryGenerator.GenerateDeleteQuery<Instance>(instance));
-        instance = null;
-        UpdateInstanceYaml();
-      }
+      var idx = Instances.instancesFolders.FindIndex(i => i == instance.InstancePath);
+      Instances.instancesFolders.RemoveAt(idx);
+      UpdateYaml();
     }
-
-    #endregion
-
-    #region Create.
 
     public static void Create()
     {
-      using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
+      Instances.instancesFolders = new List<string>();
+      if (File.Exists(Instances.YamlFilePath))
       {
-        connection.Execute(DBInitializer.QueryGenerator.GenerateDropTableQuery<Instance>());
-        connection.Execute(DBInitializer.QueryGenerator.GenerateCreateQuery<Instance>());
+        using (var yamlReader = new StreamReader(Instances.YamlFilePath))
+        {
+          var deserialize = new YamlDotNet.Serialization.DeserializerBuilder()
+                                          .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
+                                          .Build();
+          Instances.instancesFolders = deserialize.Deserialize<List<string>>(yamlReader);
+        }
       }
     }
-
-    #endregion
   }
 }
