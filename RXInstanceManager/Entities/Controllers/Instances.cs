@@ -4,11 +4,25 @@ using System.Linq;
 using System.Data.SQLite;
 using Dapper;
 using SQLQueryGen;
+using System.IO;
 
 namespace RXInstanceManager
 {
   public static class Instances
   {
+
+    public static void UpdateInstanceYaml()
+    {
+      List<string> instancesFolders = new List<string>();
+      var instances = Get();
+      foreach (var inst in instances)
+        instancesFolders.Add(inst.InstancePath);
+      var serializer = new YamlDotNet.Serialization.SerializerBuilder()
+          .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
+          .Build();
+      var yaml = serializer.Serialize(instancesFolders);
+      File.WriteAllText(DBInitializer.YamlFilePath, yaml);
+    }
     #region Save.
 
     public static void Save(this Instance instance)
@@ -25,6 +39,7 @@ namespace RXInstanceManager
       {
         instance.Id = connection.QuerySingle<int>(DBInitializer.QueryGenerator.GenerateInsertQuery<Instance>(instance));
       }
+      //UpdateInstanceYaml();
     }
 
     private static void Update(Instance instance)
@@ -43,14 +58,8 @@ namespace RXInstanceManager
     {
       using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
       {
-        return connection.Query<Instance, Config, Instance>(
-        DBInitializer.QueryGenerator.GenerateSelectQuery<Instance>(),
-        (instance, linkedConfig) =>
-        {
-          instance.Config = linkedConfig != null && linkedConfig.Id > 0 ? linkedConfig : null;
-          return instance;
-        },
-        splitOn: "Config").ToList();
+        return connection.Query<Instance>(
+        DBInitializer.QueryGenerator.GenerateSelectQuery<Instance>()).ToList();
       }
     }
 
@@ -64,6 +73,7 @@ namespace RXInstanceManager
       {
         connection.Execute(DBInitializer.QueryGenerator.GenerateDeleteQuery<Instance>(instance));
         instance = null;
+        UpdateInstanceYaml();
       }
     }
 
@@ -75,6 +85,7 @@ namespace RXInstanceManager
     {
       using (var connection = new SQLiteConnection(DBInitializer.ConnectionString))
       {
+        connection.Execute(DBInitializer.QueryGenerator.GenerateDropTableQuery<Instance>());
         connection.Execute(DBInitializer.QueryGenerator.GenerateCreateQuery<Instance>());
       }
     }

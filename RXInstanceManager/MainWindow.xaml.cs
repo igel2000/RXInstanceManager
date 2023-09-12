@@ -68,15 +68,29 @@ namespace RXInstanceManager
     public MainWindow()
     {
       InitializeComponent();
-
       if (!Directory.Exists(Constants.LogPath))
         Directory.CreateDirectory(Constants.LogPath);
 
       DBInitializer.Initialize();
       Instances.Create();
-      Configs.Create();
 
       ActionButtonVisibleChanging();
+
+
+      if (File.Exists(DBInitializer.YamlFilePath))
+      {
+        List<string> instancesFolders;
+        using (var yamlReader = new StreamReader(DBInitializer.YamlFilePath))
+        {
+          var deserialize = new YamlDotNet.Serialization.DeserializerBuilder()
+                                          .WithNamingConvention(YamlDotNet.Serialization.NamingConventions.CamelCaseNamingConvention.Instance)
+                                          .Build();
+          instancesFolders = deserialize.Deserialize<List<string>>(yamlReader);
+        }
+        foreach (var folder in instancesFolders)
+          AddInstance(folder);
+      }
+
       LoadInstances();
       StartAsyncHandlers();
 
@@ -138,6 +152,59 @@ namespace RXInstanceManager
       }
     }
 
+    private void AddInstance(string instancePath)
+    {
+      Instance instance;
+      try
+      {
+
+        var configYamlPath = AppHelper.GetConfigYamlPath(instancePath);
+        if (!File.Exists(configYamlPath))
+        {
+          System.Windows.MessageBox.Show(string.Format("Папка '{0}' папка не является папкой экземпляра DirectumRX (Не найден config.yml)", configYamlPath),
+                                         "", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+          return;
+        }
+
+        var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
+
+
+        var instanceCode = yamlValues.GetConfigStringValue("variables.instance_name");
+        if (string.IsNullOrEmpty(instanceCode))
+        {
+          instanceCode = Dialogs.ShowEnterValueDialog("Укажите код системы");
+          if (string.IsNullOrEmpty(instanceCode))
+            return;
+
+          if (!AppHelper.ValidateInputCode(instanceCode))
+          {
+            System.Windows.MessageBox.Show("Код должен быть более от 1до 10 символов английского алфавита в нижнем регистре и цифр");
+            return;
+          }
+        }
+
+        instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
+        if (instance != null)
+        {
+          System.Windows.MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
+          LoadInstances(instance);
+          return;
+        }
+
+        instance = new Instance();
+        instance.Code = instanceCode;
+        instance.InstancePath = instancePath;
+        instance.ServiceName = $"{Constants.Service}_{instanceCode}";
+        instance.Status = Constants.InstanceStatus.NeedInstall;
+        AppHandlers.UpdateInstanceData(instance);
+        _instance = instance;
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(null, ex);
+      }
+    }
+
     private void ButtonAdd_Click(object sender, RoutedEventArgs e)
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
@@ -147,59 +214,9 @@ namespace RXInstanceManager
         DialogResult result = openFolderDialog.ShowDialog();
         if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(openFolderDialog.SelectedPath))
         {
-          Instance instance;
-          try
-          {
-            var config = AppHandlers.GetInstanceConfig(openFolderDialog.SelectedPath);
-            var yamlValues = YamlSimple.Parser.Parse(config.Body);
-
-            var instanceCode = yamlValues.GetConfigStringValue("variables.instance_name");
-            if (string.IsNullOrEmpty(instanceCode))
-            {
-              instanceCode = Dialogs.ShowEnterValueDialog("Укажите код системы");
-              if (string.IsNullOrEmpty(instanceCode))
-                return;
-
-              if (!AppHelper.ValidateInputCode(instanceCode))
-              {
-                System.Windows.MessageBox.Show("Код должен быть более от 1до 10 символов английского алфавита в нижнем регистре и цифр");
-                return;
-              }
-            }
-
-            instance = Instances.Get().FirstOrDefault(x => x.Code == instanceCode);
-            if (instance != null)
-            {
-              System.Windows.MessageBox.Show($"Экземпляр DirectumRX с кодом \"{instanceCode}\" уже добавлен");
-              LoadInstances(instance);
-              return;
-            }
-
-            AppHandlers.SetConfigStringValue(config, "variables.instance_name", instanceCode);
-
-            instance = new Instance();
-            instance.Code = instanceCode;
-            instance.InstancePath = openFolderDialog.SelectedPath;
-            instance.ServiceName = $"{Constants.Service}_{instanceCode}";
-            instance.Status = Constants.InstanceStatus.NeedInstall;
-            instance.Config = config;
-            AppHandlers.UpdateInstanceData(instance);
-
-            if (config.Instance == null)
-            {
-              config.Instance = instance;
-              config.Save();
-            }
-
-            _instance = instance;
-          }
-          catch (Exception ex)
-          {
-            AppHandlers.ErrorHandler(null, ex);
-          }
-
+          AddInstance(openFolderDialog.SelectedPath);
+          Instances.UpdateInstanceYaml();
           LoadInstances(_instance);
-
         }
       }
     }
@@ -211,8 +228,8 @@ namespace RXInstanceManager
       if (_instance == null || _instance.Status != Constants.InstanceStatus.NeedInstall)
         return;
 
-      var config = AppHandlers.GetInstanceConfig(_instance.InstancePath);
-      var yamlValues = YamlSimple.Parser.Parse(config.Body);
+      var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+      var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
 
       var isValid = ValidateBeforeInstallInstance(yamlValues);
       if (!isValid)
@@ -255,9 +272,6 @@ namespace RXInstanceManager
 
         if (acceptResult != MessageBoxResult.Yes)
           return;
-
-        if (_instance.Config != null)
-          Configs.Delete(_instance.Config);
 
         Instances.Delete(_instance);
 
@@ -444,8 +458,6 @@ namespace RXInstanceManager
       }
     }
 
-
-
     private void UpdateConfig_Click(object sender, RoutedEventArgs e)
     {
       AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
@@ -469,7 +481,6 @@ namespace RXInstanceManager
           {
             AppHandlers.ErrorHandler(_instance, ex);
           }
-
         }
       }
     }
@@ -542,9 +553,6 @@ namespace RXInstanceManager
       {
         AppHandlers.ErrorHandler(_instance, ex);
       }
-
     }
-
-
   }
 }

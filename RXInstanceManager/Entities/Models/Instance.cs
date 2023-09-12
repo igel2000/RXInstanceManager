@@ -5,6 +5,7 @@ using System.IO;
 
 namespace RXInstanceManager
 {
+
   [Table("instance")]
   public class Instance
   {
@@ -56,9 +57,8 @@ namespace RXInstanceManager
     [Field("status", Size = 12)]
     public string Status { get; set; }
 
-    [Field("config")]
-    [Navigate(TableName = "config", FieldName = "id", Required = false)]
-    public Config Config { get; set; }
+    [Field("configchanged")]
+    public DateTime ConfigChanged { get; set; }
 
     public override string ToString()
     {
@@ -81,7 +81,6 @@ namespace RXInstanceManager
         var readText = File.ReadAllLines(ProjectConfigPath);
         foreach (var s in readText)
         {
-          //Console.WriteLine(s);
           builder.AppendLine(s);
         }
       }

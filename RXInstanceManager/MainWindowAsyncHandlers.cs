@@ -32,10 +32,10 @@ namespace RXInstanceManager
         foreach (var instance in GridInstances.Items.Cast<Instance>())
         {
           var configYamlPath = AppHelper.GetConfigYamlPath(instance.InstancePath);
-          if (File.Exists(configYamlPath) && instance.Config != null)
+          if (File.Exists(configYamlPath))
           {
             var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
-            if (changeTime.MoreThanUpToSeconds(instance.Config.Changed))
+            if (instance.ConfigChanged == null ||  changeTime.MoreThanUpToSeconds(instance.ConfigChanged))
             {
               AppHandlers.UpdateInstanceData(instance);
               LoadInstances(_instance);

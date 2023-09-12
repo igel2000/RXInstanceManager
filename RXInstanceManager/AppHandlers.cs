@@ -36,7 +36,7 @@ namespace RXInstanceManager
     #endregion
 
     #region Работа с конфигом.
-
+    /*
     public static Config GetInstanceConfig(string instancePath)
     {
       if (string.IsNullOrEmpty(instancePath) || !Directory.Exists(instancePath))
@@ -54,28 +54,23 @@ namespace RXInstanceManager
         File.WriteAllText(configYamlPath, example);
       }
 
-      var config = Configs.Get().FirstOrDefault(x => x.Path == configYamlPath);
-      if (config == null)
-      {
-        config = new Config();
-        config.Instance = Instances.Get().FirstOrDefault(x => x.InstancePath == instancePath);
-        config.Path = configYamlPath;
-      }
-
-      config.Body = File.ReadAllText(configYamlPath);
-      config.Changed = AppHelper.GetFileChangeTime(configYamlPath);
-      config.Save();
+      Config config = new Config();
+      config.Path = configYamlPath;
+      //config.Body = File.ReadAllText(configYamlPath);
+      //config.Changed = AppHelper.GetFileChangeTime(configYamlPath);
 
       return config;
     }
+    */
 
     public static void UpdateInstanceData(Instance instance)
     {
-      if (instance == null || instance.Config == null || string.IsNullOrEmpty(instance.InstancePath))
+      if (instance == null || string.IsNullOrEmpty(instance.InstancePath))
         return;
 
-      var config = GetInstanceConfig(instance.InstancePath);
-      var yamlValues = YamlSimple.Parser.Parse(config.Body);
+      //var config = GetInstanceConfig(instance.InstancePath);
+      var yamlValues = YamlSimple.Parser.ParseFile(AppHelper.GetConfigYamlPath(instance.InstancePath));
+      //var yamlValues = YamlSimple.Parser.Parse(config.Body);
 
       var protocol = yamlValues.GetConfigStringValue("variables.protocol");
       var host = yamlValues.GetConfigStringValue("variables.host_fqdn");
@@ -98,6 +93,16 @@ namespace RXInstanceManager
       instance.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
       instance.PlatformVersion = GetInstancePlatformVersion(instance.InstancePath);
       instance.SolutionVersion = GetInstanceSolutionVersion(instance.InstancePath);
+
+      instance.Status = AppHandlers.GetServiceStatus(instance);
+
+      var configYamlPath = AppHelper.GetConfigYamlPath(instance.InstancePath);
+      if (File.Exists(configYamlPath))
+      {
+        var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
+        instance.ConfigChanged = changeTime;
+      }
+
       instance.Save();
     }
 
@@ -118,10 +123,12 @@ namespace RXInstanceManager
       return null;
     }
 
+    /*
     public static void SetConfigStringValue(Config config, string key, string value)
     {
       YamlSimple.Parser.UpdateFileStringValue(config.Path, key, value);
     }
+    */
 
     #endregion
 
@@ -139,7 +146,7 @@ namespace RXInstanceManager
 
     public static string GetServiceStatus(string serviceName)
     {
-      var serviceStatus = Constants.InstanceStatus.NeedInstall;
+      var serviceStatus = Constants.InstanceStatus.Stopped;
 
       using (var service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == serviceName))
       {

@@ -32,14 +32,27 @@ namespace RXInstanceManager
       var instances = Instances.Get();
       foreach (var instance in instances)
       {
+        bool needSave = false;
         var status = AppHandlers.GetServiceStatus(instance);
         if (instance.Status != status)
         {
           instance.Status = status;
-          instance.Save();
+          needSave = true;
         }
-      }
 
+        var configYamlPath = AppHelper.GetConfigYamlPath(instance.InstancePath);
+        if (File.Exists(configYamlPath))
+        {
+          var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
+          if (changeTime.MoreThanUpToSeconds(instance.ConfigChanged))
+          {
+            instance.ConfigChanged = changeTime;
+            needSave = true;
+          }
+        }
+        if (needSave)
+          instance.Save();
+      }
       GridInstances.ItemsSource = instances.OrderBy(x => x.Id).ThenBy(x => x.Status);
     }
 
@@ -95,7 +108,7 @@ namespace RXInstanceManager
 
       switch (status)
       {
-        case Constants.InstanceStatus.NeedInstall:
+        case Constants.InstanceStatus.Stopped:
           ButtonInstall.Visibility = Visibility.Collapsed;
           ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
@@ -106,19 +119,20 @@ namespace RXInstanceManager
           break;
         case Constants.InstanceStatus.Working:
           ButtonInstall.Visibility = Visibility.Collapsed;
-          ButtonDelete.Visibility = Visibility.Collapsed;
+          ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
           ButtonRXStart.Visibility = Visibility.Visible;
           ButtonStop.Visibility = Visibility.Visible;
           ButtonStart.Visibility = Visibility.Collapsed;
           ChangeProject.Visibility = Visibility.Visible;
           break;
-        case Constants.InstanceStatus.Stopped:
-          //ButtonCopy.Visibility = Visibility.Visible;
+       /*
+        case Constants.InstanceStatus.NeedInstall:
           ButtonDelete.Visibility = Visibility.Visible;
           ButtonStart.Visibility = Visibility.Visible;
           ChangeProject.Visibility = Visibility.Visible;
           break;
+       */
       }
     }
 
