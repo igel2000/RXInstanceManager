@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Data.SQLite;
-using Dapper;
 using System.IO;
 
 namespace RXInstanceManager
