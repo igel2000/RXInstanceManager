@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Threading;
 using System.Reflection;
-using Microsoft.Win32;
 using System.Windows.Forms;
 
 
@@ -77,8 +74,8 @@ namespace RXInstanceManager
       StartAsyncHandlers();
       m_notifyIcon = new System.Windows.Forms.NotifyIcon();
       m_notifyIcon.BalloonTipText = "The app has been minimised. Click the tray icon to show.";
-      m_notifyIcon.BalloonTipTitle = "The App";
-      m_notifyIcon.Text = "The App";
+      m_notifyIcon.BalloonTipTitle = "RXInstanceManager";
+      m_notifyIcon.Text = "RXInstanceManager";
       m_notifyIcon.Icon = new System.Drawing.Icon("App.ico");
       m_notifyIcon.Click += new EventHandler(m_notifyIcon_Click);
     }
@@ -145,27 +142,6 @@ namespace RXInstanceManager
           Instances.Add(openFolderDialog.SelectedPath);
           LoadInstances(openFolderDialog.SelectedPath);
         }
-      }
-    }
-
-    private void ButtonDelete_Click(object sender, RoutedEventArgs e)
-    {
-      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
-
-      try
-      {
-        var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление экземпляра \"{_instance.Code}\"",
-                                           "Подтверждение удаления", MessageBoxButton.YesNo);
-        if (acceptResult != MessageBoxResult.Yes)
-          return;
-        Instances.Delete(_instance);
-        LoadInstances();
-        _instance = GridInstances.SelectedItem as Instance;
-        ActionButtonVisibleChanging();
-      }
-      catch (Exception ex)
-      {
-        AppHandlers.ErrorHandler(_instance, ex);
       }
     }
 
@@ -394,7 +370,7 @@ namespace RXInstanceManager
 
       try
       {
-        AppHandlers.ExecuteCmdCommand($"cd {_instance.InstancePath}", true);
+        AppHandlers.ExecuteCmdCommand($"cd /d {_instance.InstancePath}", true);
       }
       catch (Exception ex)
       {
@@ -450,6 +426,79 @@ namespace RXInstanceManager
         logs_folder = logs_folder.Replace("{{ instance_name }}", instance_name);
       }
       AppHandlers.LaunchProcess(logs_folder);
+    }
+
+    private void ClearLogAllInstancesContext_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      foreach (var instance in Instances.instances)
+      {
+        try
+        {
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(instance.InstancePath), string.Format("map clear_log"), true, true);
+        }
+        catch (Exception ex)
+        {
+          AppHandlers.ErrorHandler(instance, ex);
+        }
+      }
+    }
+
+    private void ConvertDBsContext_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+      {
+        var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
+        openFileDialog.InitialDirectory = string.IsNullOrEmpty(_instance.ProjectConfigPath) ? "C:\\" : Path.GetDirectoryName(_instance.ProjectConfigPath);
+        openFileDialog.Filter = filter;
+        openFileDialog.FilterIndex = 1;
+        openFileDialog.Multiselect = true;
+        openFileDialog.RestoreDirectory = true;
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+          var currentProjectConfig = _instance.ProjectConfigPath;
+          foreach (var config_filename in openFileDialog.FileNames)
+          {
+            try
+            {
+              var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+              if (serviceStatus == Constants.InstanceStatus.Working)
+                AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all down", true, true);
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map update_config {0} --confirm=False -rundds=False", config_filename), true, true);
+              AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("do db convert"), true, true);
+            }
+            catch (Exception ex)
+            {
+              AppHandlers.ErrorHandler(_instance, ex);
+            }
+          }
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), string.Format("map set {0} -rundds=False -need_pause", currentProjectConfig), true, true);
+        }
+      }
+    }
+
+    private void RemoveInstance_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+
+      try
+      {
+        var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление инстанса из списка \"{_instance.Code}\"",
+                                           "Подтверждение удаления", MessageBoxButton.YesNo);
+        if (acceptResult != MessageBoxResult.Yes)
+          return;
+        Instances.Delete(_instance);
+        LoadInstances();
+        _instance = GridInstances.SelectedItem as Instance;
+        ActionButtonVisibleChanging();
+      }
+      catch (Exception ex)
+      {
+        AppHandlers.ErrorHandler(_instance, ex);
+      }
+
     }
   }
 }

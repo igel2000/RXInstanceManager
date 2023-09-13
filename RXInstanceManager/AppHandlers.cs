@@ -15,25 +15,6 @@ namespace RXInstanceManager
   {
     private static Logger logger = LogManager.GetCurrentClassLogger();
 
-    #region Работа с файлами и каталогами.
-
-    public static void DeleteInstanceFolder(string path)
-    {
-      var folder = new DirectoryInfo(path);
-      folder.Attributes &= ~FileAttributes.ReadOnly;
-
-      Directory.Delete(path, true);
-      Directory.CreateDirectory(path);
-
-      var accessControl = Directory.GetAccessControl(path);
-      accessControl.AddAccessRule(new FileSystemAccessRule(WindowsIdentity.GetCurrent().Name,
-          FileSystemRights.FullControl | FileSystemRights.Synchronize,
-          InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-          PropagationFlags.None, AccessControlType.Allow));
-      Directory.SetAccessControl(path, accessControl);
-    }
-
-    #endregion
 
     #region Работа с конфигом.
 

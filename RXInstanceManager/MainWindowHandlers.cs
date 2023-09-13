@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Diagnostics;
 
 namespace RXInstanceManager
 {
@@ -77,35 +75,40 @@ namespace RXInstanceManager
     {
       ButtonStart.Visibility = Visibility.Collapsed;
       ButtonStop.Visibility = Visibility.Collapsed;
-      ButtonDelete.Visibility = Visibility.Collapsed;
       ButtonDDSStart.Visibility = Visibility.Collapsed;
       ButtonRXStart.Visibility = Visibility.Collapsed;
+      ButtonLogsFolder.Visibility = Visibility.Collapsed;
 
-      ChangeProject.Visibility = Visibility.Collapsed;
-      ConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ClearLogContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ChangeProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      UpdateConfig.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      CreateProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      RunDDSWithOutDeploy.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       InfoContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ClearLogContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ClearLogAllInstancesContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ProjectConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      ConvertDBsContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      RemoveInstance.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
 
       status = _instance == null ? status : _instance.Status;
 
       switch (status)
       {
         case Constants.InstanceStatus.Stopped:
-          ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
           ButtonRXStart.Visibility = Visibility.Collapsed;
           ButtonStop.Visibility = Visibility.Collapsed;
           ButtonStart.Visibility = Visibility.Visible;
-          ChangeProject.Visibility = Visibility.Visible;
+          ButtonLogsFolder.Visibility = Visibility.Visible;
           break;
         case Constants.InstanceStatus.Working:
-          ButtonDelete.Visibility = Visibility.Visible;
           ButtonDDSStart.Visibility = Visibility.Visible;
           ButtonRXStart.Visibility = Visibility.Visible;
           ButtonStop.Visibility = Visibility.Visible;
           ButtonStart.Visibility = Visibility.Collapsed;
-          ChangeProject.Visibility = Visibility.Visible;
+          ButtonLogsFolder.Visibility = Visibility.Visible;
           break;
       }
     }
