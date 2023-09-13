@@ -42,6 +42,7 @@
         <Button x:Name="ButtonStop" Content="do all down" Style="{DynamicResource RecordActionButton}" Background="SteelBlue" Click="ButtonStop_Click" />
         <Button x:Name="ButtonDDSStart" Content="Запустить DDS" Style="{DynamicResource RecordActionButton}" Background="GreenYellow" Click="ButtonDDSStart_Click" />
         <Button x:Name="ButtonRXStart" Content="Открыть веб-клиент" Style="{DynamicResource RecordActionButton}" Background="Violet" Click="ButtonRXStart_Click" />
+        <Button x:Name="ButtonLogsFolder" Content="Папка логов" Style="{DynamicResource RecordActionButton}" Background="Gray" Click="ButtonLogsFolder_Click"></Button>
       </StackPanel>
       <DataGrid x:Name="GridInstances" AutoGenerateColumns="False" Style="{DynamicResource DataGridStyle}" Grid.Row="1" SelectionChanged="GridInstances_SelectionChanged" >
         <DataGrid.Columns>

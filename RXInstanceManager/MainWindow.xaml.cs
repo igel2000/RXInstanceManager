@@ -438,5 +438,18 @@ namespace RXInstanceManager
         AppHandlers.ErrorHandler(_instance, ex);
       }
     }
+
+    private void ButtonLogsFolder_Click(object sender, RoutedEventArgs e)
+    {
+      var configYamlPath = AppHelper.GetConfigYamlPath(_instance.InstancePath);
+      var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
+      var instance_name = yamlValues.GetConfigStringValue("variables.instance_name");
+      var logs_folder = yamlValues.GetConfigStringValue("logs_path.LOGS_PATH");
+      if (logs_folder.Contains("{{ instance_name }}"))
+      {
+        logs_folder = logs_folder.Replace("{{ instance_name }}", instance_name);
+      }
+      AppHandlers.LaunchProcess(logs_folder);
+    }
   }
 }

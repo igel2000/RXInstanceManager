@@ -6,7 +6,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{93DDFFE1-5B52-4444-B4CD-4E3EC1B2E226}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <RootNamespace>RXInstanceManager</RootNamespace>
     <AssemblyName>RXInstanceManager</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
