@@ -80,8 +80,9 @@ namespace RXInstanceManager
       ButtonLogsFolder.Visibility = Visibility.Collapsed;
 
       ChangeProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      UpdateConfig.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       CreateProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      CloneProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      UpdateConfig.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       RunDDSWithOutDeploy.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       InfoContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
       CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
