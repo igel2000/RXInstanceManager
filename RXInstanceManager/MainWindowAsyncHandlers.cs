@@ -42,8 +42,6 @@ namespace RXInstanceManager
             var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
             if (instance.ConfigChanged == null || changeTime.MoreThanUpToSeconds(inst.ConfigChanged))
             {
-              AppHandlers.UpdateInstanceData(instance);
-
               var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
 
               var protocol = yamlValues.GetConfigStringValue("variables.protocol");
@@ -76,8 +74,6 @@ namespace RXInstanceManager
           }
           else
           {
-            //AppHandlers.UpdateInstanceData(instance);
-            
             instance.DBEngine = string.Empty;
             instance.ServerDB = string.Empty;
             instance.DBName = string.Empty;
