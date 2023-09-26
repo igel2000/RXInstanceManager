@@ -28,7 +28,7 @@ namespace RXInstanceManager
     private void LoadInstancesItems()
     {
       var instances = Instances.Get();
-      GridInstances.ItemsSource = instances.OrderBy(x => x.Code).ThenBy(x => x.Status);
+      GridInstances.ItemsSource = instances.OrderByDescending(x => x.Status).ThenBy(x => x.InstancePath);
       CollectionViewSource.GetDefaultView(GridInstances.ItemsSource).Refresh();
       GridInstances.UpdateLayout();
       if (GridInstances.Items.Count > 0)
@@ -48,7 +48,7 @@ namespace RXInstanceManager
     private void LoadInstancesItems(string instancePath)
     {
       var instances = Instances.Get();
-      GridInstances.ItemsSource = instances.OrderBy(x => x.Code).ThenBy(x => x.Status);
+      GridInstances.ItemsSource = instances.OrderByDescending(x => x.Status).ThenBy(x => x.InstancePath);
 
       if (!string.IsNullOrEmpty(instancePath) && GridInstances.Items.Count > 0)
       {
@@ -79,22 +79,23 @@ namespace RXInstanceManager
       ButtonRXStart.Visibility = Visibility.Collapsed;
       ButtonLogsFolder.Visibility = Visibility.Collapsed;
 
-      ChangeProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      CreateProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      CloneProject.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      UpdateConfig.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      RunDDSWithOutDeploy.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      InfoContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      CmdAdminContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ClearLogContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ClearLogAllInstancesContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ProjectConfigContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      ConvertDBsContext.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
-      RemoveInstance.Visibility = _instance == null ? Visibility.Collapsed : Visibility.Visible;
+      var IsVisibleContextButton = _instance == null || string.IsNullOrEmpty(_instance.Code) ? Visibility.Collapsed : Visibility.Visible;
+      ChangeProject.Visibility = IsVisibleContextButton;
+      CreateProject.Visibility = IsVisibleContextButton;
+      CloneProject.Visibility = IsVisibleContextButton;
+      UpdateConfig.Visibility = IsVisibleContextButton;
+      RunDDSWithOutDeploy.Visibility = IsVisibleContextButton;
+      InfoContext.Visibility = IsVisibleContextButton;
+      CmdAdminContext.Visibility = IsVisibleContextButton;
+      ClearLogContext.Visibility = IsVisibleContextButton;
+      ClearLogAllInstancesContext.Visibility = IsVisibleContextButton;
+      ConfigContext.Visibility = IsVisibleContextButton;
+      ProjectConfigContext.Visibility = IsVisibleContextButton;
+      ConvertDBsContext.Visibility = IsVisibleContextButton;
+      RemoveProjectDataContext.Visibility = IsVisibleContextButton;
 
-      status = _instance == null ? status : _instance.Status;
-
+      status = _instance == null || string.IsNullOrEmpty(_instance.Code) ? status : _instance.Status;
+        
       switch (status)
       {
         case Constants.InstanceStatus.Stopped:

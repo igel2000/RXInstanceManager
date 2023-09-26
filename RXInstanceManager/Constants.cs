@@ -14,6 +14,7 @@ namespace RXInstanceManager
       public const string Working = "Working";
       public const string Stopped = "Stopped";
       public const string NeedInstall = "NeedInstall";
+      public const string NotInstalled = "Not installed";
     }
 
     public static class EditEmptyValue

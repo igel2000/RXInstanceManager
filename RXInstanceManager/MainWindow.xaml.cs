@@ -243,7 +243,8 @@ namespace RXInstanceManager
       using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
       {
         var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
-        openFileDialog.InitialDirectory = Path.GetDirectoryName(_instance.ProjectConfigPath);
+        if (!string.IsNullOrEmpty(_instance.ProjectConfigPath))
+          openFileDialog.InitialDirectory = Path.GetDirectoryName(_instance.ProjectConfigPath);
         openFileDialog.Filter = filter;
         openFileDialog.FilterIndex = 1;
         openFileDialog.RestoreDirectory = true;
@@ -485,7 +486,7 @@ namespace RXInstanceManager
 
       try
       {
-        var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление инстанса из списка \"{_instance.Code}\"",
+        var acceptResult = System.Windows.MessageBox.Show($"Подтвердите удаление инстанса из списка \"{_instance.InstancePath}\"",
                                            "Подтверждение удаления", MessageBoxButton.YesNo);
         if (acceptResult != MessageBoxResult.Yes)
           return;
@@ -529,6 +530,41 @@ namespace RXInstanceManager
         }
       }
 
+    }
+
+    private void RemoveProjectDataContext_Click(object sender, RoutedEventArgs e)
+    {
+      AppHandlers.InfoHandler(_instance, MethodBase.GetCurrentMethod().Name);
+      using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+      {
+        var filter = string.Format("configs for {0}|{0}_*.yml;{0}_*.yaml|YAML-файлы|*.yml;*.yaml|All files (*.*)|*.*", _instance.Code);
+        openFileDialog.InitialDirectory = Path.GetDirectoryName(_instance.ProjectConfigPath);
+        openFileDialog.Filter = filter;
+        openFileDialog.FilterIndex = 1;
+        openFileDialog.RestoreDirectory = true;
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+          var currentProjectConfig = _instance.ProjectConfigPath;
+
+          var serviceStatus = AppHandlers.GetServiceStatus(_instance);
+          if (serviceStatus == Constants.InstanceStatus.Working)
+            AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath), "all down", true, true);
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath),
+                                    string.Format("map update_config {0} --confirm=False -rundds=False", openFileDialog.FileName),
+                                    true, true);
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath),
+                                    string.Format("do db drop"),
+                                    true, true);
+          var configYamlPath = AppHelper.GetConfigYamlPath(openFileDialog.FileName);
+          var yamlValues = YamlSimple.Parser.ParseFile(configYamlPath);
+          var home_path = yamlValues.GetConfigStringValue("variables.home_path");
+          Directory.Delete(home_path, true);
+          AppHandlers.LaunchProcess(AppHelper.GetDoPath(_instance.InstancePath),
+                                    string.Format("map set {0} -rundds=False -need_pause", currentProjectConfig),
+                                    true, true);
+        }
+      }
     }
   }
 }

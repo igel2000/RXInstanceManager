@@ -23,41 +23,53 @@ namespace RXInstanceManager
       if (instance == null || string.IsNullOrEmpty(instance.InstancePath))
         return;
 
-      var idx = Instances.instances.FindIndex(i => i.Code == instance.Code);
+      var idx = Instances.instances.FindIndex(i => i.InstancePath == instance.InstancePath);
       var inst = Instances.instances[idx];
 
-
-      var yamlValues = YamlSimple.Parser.ParseFile(AppHelper.GetConfigYamlPath(instance.InstancePath));
-
-      var protocol = yamlValues.GetConfigStringValue("variables.protocol");
-      var host = yamlValues.GetConfigStringValue("variables.host_fqdn");
-
-      inst.DBEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
-      var connection = yamlValues.GetConfigStringValue("common_config.CONNECTION_STRING");
-      inst.ServerDB = AppHelper.GetServerFromConnectionString(inst.DBEngine, connection);
-      var dbName = AppHelper.GetDBNameFromConnectionString(inst.DBEngine, connection);
-      if (dbName == "{{ database }}")
-        dbName = yamlValues.GetConfigStringValue("variables.database");
-      inst.DBName = dbName ?? string.Empty;
-
-      inst.Name = yamlValues.GetConfigStringValue("variables.purpose");
-      inst.ProjectConfigPath = yamlValues.GetConfigStringValue("variables.project_config_path");
-      inst.Port = yamlValues.GetConfigIntValue("variables.http_port") ?? 0;
-      inst.URL = AppHelper.GetClientURL(protocol, host, inst.Port);
-      inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path");
-      if (inst.StoragePath == "{{ home_path_src }}")
-        inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path_src");
-      inst.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
-      inst.PlatformVersion = GetInstancePlatformVersion(inst.InstancePath);
-      inst.SolutionVersion = GetInstanceSolutionVersion(inst.InstancePath);
-
-      inst.Status = AppHandlers.GetServiceStatus(inst);
-
-      var configYamlPath = AppHelper.GetConfigYamlPath(inst.InstancePath);
-      if (File.Exists(configYamlPath))
+      var configFilePath = AppHelper.GetConfigYamlPath(instance.InstancePath);
+      if (File.Exists(configFilePath))
       {
-        var changeTime = AppHelper.GetFileChangeTime(configYamlPath);
-        inst.ConfigChanged = changeTime;
+        var yamlValues = YamlSimple.Parser.ParseFile(configFilePath);
+
+        var protocol = yamlValues.GetConfigStringValue("variables.protocol");
+        var host = yamlValues.GetConfigStringValue("variables.host_fqdn");
+
+        inst.DBEngine = yamlValues.GetConfigStringValue("common_config.DATABASE_ENGINE");
+        var connection = yamlValues.GetConfigStringValue("common_config.CONNECTION_STRING");
+        inst.ServerDB = AppHelper.GetServerFromConnectionString(inst.DBEngine, connection);
+        var dbName = AppHelper.GetDBNameFromConnectionString(inst.DBEngine, connection);
+        if (dbName == "{{ database }}")
+          dbName = yamlValues.GetConfigStringValue("variables.database");
+        inst.DBName = dbName ?? string.Empty;
+
+        inst.Name = yamlValues.GetConfigStringValue("variables.purpose");
+        inst.ProjectConfigPath = yamlValues.GetConfigStringValue("variables.project_config_path");
+        inst.Port = yamlValues.GetConfigIntValue("variables.http_port") ?? 0;
+        inst.URL = AppHelper.GetClientURL(protocol, host, inst.Port);
+        inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path");
+        if (inst.StoragePath == "{{ home_path_src }}")
+          inst.StoragePath = yamlValues.GetConfigStringValue("variables.home_path_src");
+        inst.SourcesPath = yamlValues.GetConfigStringValue("services_config.DevelopmentStudio.GIT_ROOT_DIRECTORY");
+        inst.PlatformVersion = GetInstancePlatformVersion(inst.InstancePath);
+        inst.SolutionVersion = GetInstanceSolutionVersion(inst.InstancePath);
+
+        inst.Status = AppHandlers.GetServiceStatus(inst);
+        inst.ConfigChanged = AppHelper.GetFileChangeTime(configFilePath);
+      }
+      else
+      {
+        inst.DBEngine = string.Empty;
+        inst.ServerDB = string.Empty;
+        inst.DBName = string.Empty;
+        inst.Name = string.Empty;
+        inst.ProjectConfigPath = string.Empty;
+        inst.Port = 0;
+        inst.URL = string.Empty;
+        inst.StoragePath = string.Empty;
+        inst.SourcesPath = string.Empty;
+        inst.PlatformVersion = string.Empty;
+        inst.SolutionVersion = string.Empty;
+        inst.Status = Constants.InstanceStatus.NotInstalled;
       }
     }
 
@@ -135,12 +147,12 @@ namespace RXInstanceManager
         var subDirectories = directoryInfo.GetDirectories();
         if (subDirectories.Count(x => x.Name.StartsWith("4.")) == 1)
           return subDirectories.FirstOrDefault(x => x.Name.StartsWith("4.")).Name;
+        var json = File.ReadAllText(manifestFile);
+        var solution = JsonSerializer.Deserialize<Solution>(json);
+        return solution.Version;
       }
-
-      var json = File.ReadAllText(manifestFile);
-      var solution = JsonSerializer.Deserialize<Solution>(json);
-
-      return solution.Version;
+      else
+        return string.Empty;
     }
 
     #endregion
@@ -173,8 +185,7 @@ namespace RXInstanceManager
         if (exception.InnerException.InnerException != null)
           logger.Error(string.Format($"Message: {exception.InnerException.InnerException.Message}, {exception.InnerException.InnerException.StackTrace}"));
       }
-
-      ShowMainLog();
+      //ShowMainLog();
     }
 
     #endregion
